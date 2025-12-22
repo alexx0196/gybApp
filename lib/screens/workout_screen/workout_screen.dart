@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
+import 'package:gym_tracker/screens/app_drawer/app_drawer.dart';
 
 
 class WorkoutScreen extends StatefulWidget {
@@ -11,7 +12,7 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  CollectionService collectionService = CollectionService();
+  WorkoutsService workoutsService = WorkoutsService();
   final authService = sl.get<AuthService>();
 
   @override
@@ -20,7 +21,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       appBar: AppBar(title: Text('Your workout ${widget.id}')),
       body: Center(
         child: StreamBuilder(
-          stream: collectionService.getWorkout(authService.currentUser!.uid, widget.id), 
+          stream: workoutsService.getWorkout(authService.currentUser!.uid, widget.id), 
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return CircularProgressIndicator();
@@ -30,10 +31,29 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
               return Text('No exercices');
             }
             final workout = snapshot.data!.data();
-            return Text('Tout va bien');
+            
+            return Column(children: [
+              Expanded(child: ListView.builder(
+                padding: const EdgeInsets.all(8.0),
+                itemCount: workout?.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return ListTile(
+                    title: Center(child: Text('Name of exercice')),
+                    onTap: () => print('I pushed exercice'),
+                  );
+                }
+              ),),
+            ],);
           }
         )
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          print('add exercice');
+        },
+        child: Icon(Icons.add),
+      ),
+      drawer: AppDrawer(),
     );
   }
 }

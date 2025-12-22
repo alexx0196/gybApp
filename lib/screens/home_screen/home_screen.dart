@@ -14,7 +14,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  CollectionService collectionService = CollectionService();
+  WorkoutsService workoutsService = WorkoutsService();
   final authService = sl.get<AuthService>();
 
   @override
@@ -23,7 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(title: const Text('Home Page'),),
       body: Center(
         child: StreamBuilder(
-          stream: collectionService.getAllWorkouts(authService.currentUser!.uid), 
+          stream: workoutsService.getAllWorkouts(authService.currentUser!.uid), 
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return CircularProgressIndicator();
@@ -58,7 +58,7 @@ class _HomeScreenState extends State<HomeScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
           try {
-            await collectionService.addWorkout(authService.currentUser!.uid);
+            await workoutsService.addWorkout(authService.currentUser!.uid);
           } on WorkoutAlreadyExistsException catch (e) {
             Navigator.push(
               context, 

@@ -69,6 +69,35 @@ class AuthService {
 class CollectionService {
   final fireStore = FirebaseFirestore.instance;
 
+  Future<String> addCustomExercice(String uid, String name) async {
+    final docRef = fireStore.collection('users').doc(uid).collection('exercices').doc(); 
+    await docRef.set({
+      'name': name,
+    });
+    // SetOptions(merge: true); // нужно чтобы обновить документ, не создавая новый
+    return docRef.id;
+  }
+
+  // Future<void> addExercice(String uid, String workout, String name, ) async {
+  //   DocumentReference<Map<String, dynamic>> docRef = fireStore.collection('users').doc(uid).collection('catalogs').doc(catalogId);
+  //   DocumentSnapshot<Map<String, dynamic>> snapshot = await docRef.get();
+  //   if (snapshot.exists) {
+  //     Map<String, dynamic> existingData = snapshot.data()!;
+  //     Map<String, dynamic> existingWords = existingData['words'] ?? {};
+
+  //     existingWords.addAll(words);
+  //     await docRef.update({'words': existingWords});
+  //   }
+  //   else {
+  //     await docRef.set({'words': words});
+  //   }
+  // }
+}
+
+
+class WorkoutsService {
+  final fireStore = FirebaseFirestore.instance;
+
   Future<String> addWorkout(String uid) async {
     final now = DateTime.now();
     final startOfDay = DateTime(now.year, now.month, now.day);
@@ -98,21 +127,6 @@ class CollectionService {
   Stream<DocumentSnapshot<Map<String, dynamic>>> getWorkout(String uid, String workoutId) {
     final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).snapshots();
     return doc;
-  }
-
-  Future<void> addWords(String uid, String catalogId, Map<String, String> words) async {
-    DocumentReference<Map<String, dynamic>> docRef = fireStore.collection('users').doc(uid).collection('catalogs').doc(catalogId);
-    DocumentSnapshot<Map<String, dynamic>> snapshot = await docRef.get();
-    if (snapshot.exists) {
-      Map<String, dynamic> existingData = snapshot.data()!;
-      Map<String, dynamic> existingWords = existingData['words'] ?? {};
-
-      existingWords.addAll(words);
-      await docRef.update({'words': existingWords});
-    }
-    else {
-      await docRef.set({'words': words});
-    }
   }
 }
 
