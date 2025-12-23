@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/screens/account_screen/account_screen.dart';
+import 'package:gym_tracker/screens/exercises_screen/exercises_screen.dart';
 import 'package:gym_tracker/screens/home_screen/home_screen.dart';
 
 
@@ -26,6 +27,14 @@ class _AppDrawerState extends State<AppDrawer> {
             onTap: () {
               Navigator.pushReplacement(context, MaterialPageRoute(
                 builder: (BuildContext context) => const HomeScreen(),
+              ));
+            },
+          ),        
+          ListTile(
+            title: const Text('Exercices'),
+            onTap: () {
+              Navigator.pushReplacement(context, MaterialPageRoute(
+                builder: (BuildContext context) => const ExercisesScreen(),
               ));
             },
           ),

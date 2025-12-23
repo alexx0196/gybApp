@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
 import 'package:gym_tracker/screens/app_drawer/app_drawer.dart';
+import 'package:gym_tracker/screens/workout_screen/add_exercise_to_workout.dart';
 
 
 class WorkoutScreen extends StatefulWidget {
@@ -48,8 +49,11 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         )
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          print('add exercice');
+        onPressed: () {
+          Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (context) => AddExerciseToWorkout())
+          );
         },
         child: Icon(Icons.add),
       ),

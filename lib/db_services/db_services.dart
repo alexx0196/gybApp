@@ -57,7 +57,8 @@ class AuthService {
     );
 
     await firestore.collection('users').doc(userCredential.user!.uid).set({
-      'username': username, 
+      'username': username,
+      'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
     });
 
     return userCredential; 
@@ -69,10 +70,19 @@ class AuthService {
 class CollectionService {
   final fireStore = FirebaseFirestore.instance;
 
-  Future<String> addCustomExercice(String uid, String name) async {
-    final docRef = fireStore.collection('users').doc(uid).collection('exercices').doc(); 
-    await docRef.set({
-      'name': name,
+  Stream<List<String>> getAllExercises(String uid) {
+    final doc = fireStore.collection('users').doc(uid).snapshots().map((doc) {
+        final data = doc.data();
+        final List<dynamic> raw = data?['exercises'] ?? [];
+        return raw.cast<String>();
+    });
+    return doc;
+  }
+
+  Future<String> addCustomExercise(String uid, String name) async {
+    final docRef = fireStore.collection('users').doc(uid); 
+    await docRef.update({
+      'exercises': FieldValue.arrayUnion([name]),
     });
     // SetOptions(merge: true); // нужно чтобы обновить документ, не создавая новый
     return docRef.id;
@@ -127,6 +137,14 @@ class WorkoutsService {
   Stream<DocumentSnapshot<Map<String, dynamic>>> getWorkout(String uid, String workoutId) {
     final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).snapshots();
     return doc;
+  }
+
+  Future<String> addExercise(String uid, String workoutId, String name) async {
+    final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId);
+    docRef.set({
+      'name': name,
+    });
+    return docRef.id;
   }
 }
 
