@@ -88,7 +88,6 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _addExercise(authService.currentUser!.uid);
-          print('new exercise');
         },
         child: Icon(Icons.add),
       ),

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
+import 'package:gym_tracker/screens/workout_screen/add_info_about_exercise.dart' show ExerciseSet;
 
 
 final sl = GetIt.I;
@@ -139,10 +140,19 @@ class WorkoutsService {
     return doc;
   }
 
-  Future<String> addExercise(String uid, String workoutId, String name) async {
-    final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId);
+  Future<String> addExerciseAndInfo(String uid, String workoutId, String name, Map<String, ExerciseSet> sets) async {
+    final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').doc();
     docRef.set({
       'name': name,
+    }, SetOptions(merge: true));
+
+    sets.forEach((key, value) {
+      print(key);
+      docRef.collection('sets').doc().set({
+        'key': key,
+        'reps': value.reps,
+        'weight': value.weight,
+      }, SetOptions(merge: true));
     });
     return docRef.id;
   }

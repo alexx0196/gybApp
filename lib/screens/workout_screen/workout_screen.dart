@@ -52,7 +52,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         onPressed: () {
           Navigator.push(
             context, 
-            MaterialPageRoute(builder: (context) => ChooseExercise())
+            MaterialPageRoute(builder: (context) => ChooseExercise(workoutId: widget.id,))
           );
         },
         child: Icon(Icons.add),

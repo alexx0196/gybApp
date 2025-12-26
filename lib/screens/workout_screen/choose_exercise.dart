@@ -4,7 +4,8 @@ import 'package:gym_tracker/screens/workout_screen/add_info_about_exercise.dart'
 
 
 class ChooseExercise extends StatefulWidget {
-  const ChooseExercise({super.key});
+  final String workoutId;
+  const ChooseExercise({super.key, required this.workoutId});
 
   @override
   State<ChooseExercise> createState() => _ChooseExerciseState();
@@ -47,7 +48,10 @@ class _ChooseExerciseState extends State<ChooseExercise> {
                       onTap: () {
                         Navigator.push(
                           context, 
-                          MaterialPageRoute(builder: (context) => AddInfoAboutExercise(exerciseName: exerciseList[index],))
+                          MaterialPageRoute(builder: (context) => AddInfoAboutExercise(
+                            exerciseName: exerciseList[index], 
+                            workoutId: widget.workoutId,
+                          ),)
                         );
                       },
                     );
