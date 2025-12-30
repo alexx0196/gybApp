@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
-import 'package:gym_tracker/screens/app_drawer/app_drawer.dart';
+import 'package:gym_tracker/screens/workout_screen/add_info_about_exercise.dart';
 import 'package:gym_tracker/screens/workout_screen/choose_exercise.dart';
 
 
@@ -22,25 +22,39 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       appBar: AppBar(title: Text('Your workout ${widget.id}')),
       body: Center(
         child: StreamBuilder(
-          stream: workoutsService.getWorkout(authService.currentUser!.uid, widget.id), 
+          stream: workoutsService.getExercisesFromWorkout(authService.currentUser!.uid, widget.id), 
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return CircularProgressIndicator();
             }
             
-            if (!snapshot.hasData || snapshot.data == null || snapshot.data!.data() == null || snapshot.data!.data()?['exercices'] == null) {
-              return Text('No exercices');
+            if (snapshot.hasError) {
+              return const Text('Error loading exercises');
             }
-            final workout = snapshot.data!.data();
+
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Text('No exercises');
+            }
+
+            final exercises = snapshot.data!.docs;
             
             return Column(children: [
               Expanded(child: ListView.builder(
                 padding: const EdgeInsets.all(8.0),
-                itemCount: workout?.length,
+                itemCount: exercises.length,
                 itemBuilder: (BuildContext context, int index) {
                   return ListTile(
-                    title: Center(child: Text('Name of exercice')),
-                    onTap: () => print('I pushed exercice'),
+                    title: Center(child: Text(exercises[index]['name'])),
+                    onTap: () => Navigator.push(
+                      context, 
+                      MaterialPageRoute(
+                        builder: (context) => AddInfoAboutExercise(
+                          exerciseName: exercises[index]['name'],
+                          workoutId: widget.id,
+                          exerciseId: exercises[index].id,
+                        )
+                      )
+                    ),
                   );
                 }
               ),),
@@ -57,7 +71,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         },
         child: Icon(Icons.add),
       ),
-      drawer: AppDrawer(),
     );
   }
 }

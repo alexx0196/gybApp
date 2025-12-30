@@ -140,16 +140,36 @@ class WorkoutsService {
     return doc;
   }
 
-  Future<String> addExerciseAndInfo(String uid, String workoutId, String name, Map<String, ExerciseSet> sets) async {
-    final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').doc();
+  Stream<QuerySnapshot<Map<String, dynamic>>> getExercisesFromWorkout(String uid, String workoutId) {
+    final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').snapshots();
+    return doc;
+  }
+
+  Future<Map<int, ExerciseSet>> getCertainExercise(String uid, String workoutId, String exerciseId) async {
+    final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises')
+                .doc(exerciseId).collection('sets').orderBy(FieldPath.documentId).get();
+    final Map<int, ExerciseSet> sets = {
+      for (final doc in snapshot.docs)
+        int.parse(doc.id): ExerciseSet(
+          reps: doc['reps'],
+          weight: (doc['weight'] as num).toDouble(),
+        ),
+    };
+    return sets;
+  }
+
+  Future<String> addExerciseAndInfo(String uid, String workoutId, String exerciseId, String name, Map<int, ExerciseSet> sets) async {
+    final exerciseRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises');
+    final docRef = exerciseId.isNotEmpty
+      ? exerciseRef.doc(exerciseId)
+      : exerciseRef.doc();
+    
     docRef.set({
       'name': name,
     }, SetOptions(merge: true));
 
     sets.forEach((key, value) {
-      print(key);
-      docRef.collection('sets').doc().set({
-        'key': key,
+      docRef.collection('sets').doc(key.toString()).set({
         'reps': value.reps,
         'weight': value.weight,
       }, SetOptions(merge: true));

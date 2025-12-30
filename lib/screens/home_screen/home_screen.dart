@@ -40,7 +40,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: workouts.length,
                 itemBuilder: (BuildContext context, int index) {
                   final data = workouts[index].data();
-                  print(data);
                   final timestamp = data?['createdAt'];
 
                   final dateText = timestamp == null ? '...' : DateFormat('dd.MM.yyyy').format(timestamp.toDate());

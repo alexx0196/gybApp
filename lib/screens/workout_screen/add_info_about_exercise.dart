@@ -19,8 +19,9 @@ class ExerciseSet {
 
 class AddInfoAboutExercise extends StatefulWidget {
   final String exerciseName;
+  final String exerciseId;
   final String workoutId;
-  const AddInfoAboutExercise({super.key, required this.exerciseName, required this.workoutId});
+  const AddInfoAboutExercise({super.key, required this.exerciseName, required this.workoutId, this.exerciseId = ''});
 
   @override
   State<AddInfoAboutExercise> createState() => _AddInfoAboutExerciseState();
@@ -31,7 +32,28 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
   WorkoutsService workoutsService = WorkoutsService();
   AuthService authService = AuthService();
 
-  Map<String, ExerciseSet> sets = {};
+  Map<int, ExerciseSet> sets = {};
+
+  @override
+  void initState() {
+    super.initState();
+
+    if (widget.exerciseId.isNotEmpty) {
+      _loadSets();
+    }
+  }
+
+  Future<void> _loadSets() async {
+    final loadedSets = await workoutsService.getCertainExercise(
+      authService.currentUser!.uid,
+      widget.workoutId,
+      widget.exerciseId,
+    );
+
+    setState(() {
+      sets = loadedSets;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -46,10 +68,10 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
               workoutsService.addExerciseAndInfo(
                 authService.currentUser!.uid,
                 widget.workoutId,
+                widget.exerciseId,
                 widget.exerciseName,
                 sets,
               );
-              print('Saving exercise info with sets: $sets');
               Navigator.pop(context);
               Navigator.pop(context);
             },
@@ -69,8 +91,20 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                   return ListTile(
                     title: Text('Set ${index + 1}'),
                     subtitle: Text('Reps: ${sets.values.toList()[index].reps}, Weight: ${sets.values.toList()[index].weight} kg'),
-                    onTap: () {
-                      print('Edit set ${index + 1}');
+                    onTap: () async {
+                      final result = await showModalBottomSheet(
+                        context: context, 
+                        builder: (_) => AddSetBottomSheet(
+                          reps: sets.values.toList()[index].reps,
+                          weight: sets.values.toList()[index].weight,
+                        ),
+                      );
+                      setState(() {
+                        sets[index] = ExerciseSet(
+                          reps: result.reps,
+                          weight: result.weight,
+                        );
+                      });
                     },
                   );
                 },
@@ -83,7 +117,7 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                   builder: (_) => AddSetBottomSheet(),
                 );
                 setState(() {
-                  sets['Set ${sets.length}'] = ExerciseSet(
+                  sets[sets.length] = ExerciseSet(
                     reps: result.reps,
                     weight: result.weight,
                   );
@@ -100,21 +134,29 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
 
 
 class AddSetBottomSheet extends StatefulWidget {
-  const AddSetBottomSheet({super.key});
+  final int reps;
+  final double weight;
+  const AddSetBottomSheet({super.key, this.reps = 0, this.weight = 0.0});
 
   @override
   State<AddSetBottomSheet> createState() => _AddSetBottomSheetState();
 }
 
 class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
-  final TextEditingController _repsController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
+  late TextEditingController _repsController;
+  late TextEditingController _weightController;
 
   @override
   void dispose() {
     _repsController.dispose();
     _weightController.dispose();
     super.dispose();
+  }
+
+  @override void initState() {
+    _repsController = TextEditingController(text: widget.reps.toString());
+    _weightController = TextEditingController(text: widget.weight.toString());
+    super.initState();
   }
 
   @override
