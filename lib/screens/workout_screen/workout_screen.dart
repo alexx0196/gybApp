@@ -16,6 +16,47 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   WorkoutsService workoutsService = WorkoutsService();
   final authService = sl.get<AuthService>();
 
+  void _exerciseAlertDialog(String exerciseId, List exercises, int index) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Exercise'),
+          content: const Text('Choose an exercise to add to your workout.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Delete'),
+              onPressed: () {
+                workoutsService.deleteExerciseFromWorkout(
+                  authService.currentUser!.uid,
+                  widget.id,
+                  exerciseId,
+                );
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Change'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(
+                    builder: (context) => AddInfoAboutExercise(
+                      exerciseName: exercises[index]['name'],
+                      workoutId: widget.id,
+                      exerciseId: exercises[index].id,
+                    )
+                  )
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,15 +86,10 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                 itemBuilder: (BuildContext context, int index) {
                   return ListTile(
                     title: Center(child: Text(exercises[index]['name'])),
-                    onTap: () => Navigator.push(
-                      context, 
-                      MaterialPageRoute(
-                        builder: (context) => AddInfoAboutExercise(
-                          exerciseName: exercises[index]['name'],
-                          workoutId: widget.id,
-                          exerciseId: exercises[index].id,
-                        )
-                      )
+                    onTap: () => _exerciseAlertDialog(
+                      exercises[index].id,
+                      exercises,
+                      index,
                     ),
                   );
                 }

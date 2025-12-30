@@ -73,7 +73,9 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                 sets,
               );
               Navigator.pop(context);
-              Navigator.pop(context);
+              if (widget.exerciseId.isEmpty) {
+                Navigator.pop(context);
+              }
             },
           ),
         ],
@@ -90,7 +92,25 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                 itemBuilder: (context, index) {
                   return ListTile(
                     title: Text('Set ${index + 1}'),
-                    subtitle: Text('Reps: ${sets.values.toList()[index].reps}, Weight: ${sets.values.toList()[index].weight} kg'),
+                    subtitle: Row(
+                      children: [
+                        Expanded(
+                          child: Text('Reps: ${sets.values.toList()[index].reps}, Weight: ${sets.values.toList()[index].weight} kg'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () => {
+                            setState(() {
+                              sets.remove(index);
+                              sets = {
+                                for (int i = 0; i < sets.length; i++)
+                                  i: sets.values.toList()[i],
+                              };
+                            })
+                          }, 
+                          child: const Icon(Icons.delete)
+                        )
+                      ]
+                    ),
                     onTap: () async {
                       final result = await showModalBottomSheet(
                         context: context, 

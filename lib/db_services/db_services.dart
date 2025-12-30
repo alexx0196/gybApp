@@ -167,7 +167,14 @@ class WorkoutsService {
     docRef.set({
       'name': name,
     }, SetOptions(merge: true));
-
+    
+    final batch = FirebaseFirestore.instance.batch();
+    final snapshot = await docRef.collection('sets').get();
+    for (var doc in snapshot.docs) {
+      batch.delete(doc.reference);
+    }
+    await batch.commit();
+    
     sets.forEach((key, value) {
       docRef.collection('sets').doc(key.toString()).set({
         'reps': value.reps,
@@ -175,6 +182,17 @@ class WorkoutsService {
       }, SetOptions(merge: true));
     });
     return docRef.id;
+  }
+
+  Future<void> deleteExerciseFromWorkout(String uid, String workoutId, String exerciseId) async {
+    final exerciseRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').doc(exerciseId);
+    
+    final setsSnapshot = await exerciseRef.collection('sets').get();
+    for (final doc in setsSnapshot.docs) {
+      await doc.reference.delete();
+    }
+
+    await exerciseRef.delete();
   }
 }
 
