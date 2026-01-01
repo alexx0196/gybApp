@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:form_field_validator/form_field_validator.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
+import 'package:gym_tracker/screens/home_screen/home_screen.dart';
+import 'package:intl/intl.dart' as intl;
 
 
 class RegistrationEmailPassword extends StatefulWidget {
@@ -147,7 +149,9 @@ class RegistrationProfileDetails extends StatefulWidget {
 
 class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails> {
   final _formKey = GlobalKey<FormState>();
-  // late final AuthService authService = sl.get<AuthService>();
+
+  AuthService authService = sl.get<AuthService>();
+  AuthFireStoreService authFireStoreService = AuthFireStoreService();
 
   final _nameController = TextEditingController();
   final _dateController = TextEditingController();
@@ -224,7 +228,7 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                           lastDate: DateTime.now(),
                         );
                         if (pickedDate != null) {
-                          String formattedDate = "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                          String formattedDate = "${pickedDate.year}-${pickedDate.month}-${pickedDate.day}";
                           setState(() {
                             _dateController.text = formattedDate;
                           });
@@ -289,15 +293,19 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                 child: ElevatedButton(
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
+                      authFireStoreService.createUserData(
+                        authService.currentUser!.uid,
+                        _nameController.text,
+                        intl.DateFormat('yyyy-MM-dd').parse(_dateController.text),
+                        double.parse(_weightController.text),
+                        double.parse(_heightController.text),
+                      );
                       print('Finished Registration');
-                      // authService.createAccount(
-                      //   email: '', 
-                      //   password: '', 
-                      //   username: _nameController.text,
-                      //   dateOfBirth: DateTime.now(), 
-                      //   weight: double.parse(_weightController.text), 
-                      //   height: double.parse(_heightController.text),
-                      // );
+                      Navigator.pushAndRemoveUntil(
+                        context, 
+                        MaterialPageRoute(builder: (context) => HomeScreen()), 
+                        (route) => false
+                      );
                     }
                   },
                   style: ElevatedButton.styleFrom(

@@ -56,14 +56,14 @@ class AuthService {
       email: email, password: password
     );
 
-    await firestore.collection('users').doc(userCredential.user!.uid).set({
-      'createdAt': FieldValue.serverTimestamp(),
-      // 'username': username,
-      // 'dateOfBirth': dateOfBirth,
-      // 'weight': weight,
-      // 'height': height,
-      // 'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
-    });
+    // await firestore.collection('users').doc(userCredential.user!.uid).set({
+    //   'createdAt': FieldValue.serverTimestamp(),
+    //   'username': username,
+    //   'dateOfBirth': dateOfBirth,
+    //   'weight': weight,
+    //   'height': height,
+    //   'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
+    // });
 
     await userCredential.user!.sendEmailVerification();
 
@@ -71,6 +71,26 @@ class AuthService {
   }
 }
 
+
+class AuthFireStoreService {
+  final fireStore = FirebaseFirestore.instance;
+
+  Future<void> createUserData(String uid, String username, DateTime dateOfBirth, double weight, double height) async {
+    await fireStore.collection('users').doc(uid).set({
+      'createdAt': FieldValue.serverTimestamp(),
+      'username': username,
+      'dateOfBirth': Timestamp.fromDate(dateOfBirth),
+      'weight': weight,
+      'height': height,
+      'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
+    });
+  }
+
+  Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String uid) async {
+    final doc = await fireStore.collection('users').doc(uid).get();
+    return doc;
+  }
+}
 
 
 class CollectionService {
