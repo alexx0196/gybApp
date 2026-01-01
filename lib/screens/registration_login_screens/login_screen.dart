@@ -3,7 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
 import 'package:gym_tracker/screens/home_screen/home_screen.dart';
-import 'package:gym_tracker/screens/registration_login_screens/registration_screen.dart';
+import 'package:gym_tracker/screens/registration_login_screens/registrations_etaps.dart';
 
 
 class LoginScreen extends StatefulWidget {
@@ -102,7 +102,7 @@ class _LoginScreen extends State<LoginScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                         recognizer: TapGestureRecognizer()..onTap = () {
-                          Navigator.push(context, MaterialPageRoute(builder: (context) => RegistrationScreen()));
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => RegistrationEmailPassword()));
                         }
                       )
                     ),

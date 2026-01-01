@@ -43,7 +43,6 @@ class AuthService {
   Future<UserCredential> createAccount({
     required String email,
     required String password,
-    required String username,
   }) async {
     // CollectionReference collectionRef = FirebaseFirestore.instance.collection('users');
     // QuerySnapshot snapshot = await collectionRef.where('username', isEqualTo: username).get();
@@ -58,9 +57,15 @@ class AuthService {
     );
 
     await firestore.collection('users').doc(userCredential.user!.uid).set({
-      'username': username,
-      'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
+      'createdAt': FieldValue.serverTimestamp(),
+      // 'username': username,
+      // 'dateOfBirth': dateOfBirth,
+      // 'weight': weight,
+      // 'height': height,
+      // 'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
     });
+
+    await userCredential.user!.sendEmailVerification();
 
     return userCredential; 
   }
