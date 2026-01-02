@@ -27,43 +27,24 @@ class AuthService {
     }
   }
 
-  Future<UserCredential> signIn({
+  Future<Object> signIn({
     required String email,
     required String password,
   }) async {
-    try {
-      return await firebaseAuth.signInWithEmailAndPassword(
-        email: email, password: password
-      );
-    } on FirebaseAuthException catch (e) {
-      throw e;
-    }
+    UserCredential userCredential = await firebaseAuth.signInWithEmailAndPassword(
+      email: email,
+      password: password
+    );
+    return userCredential;
   }
 
   Future<UserCredential> createAccount({
     required String email,
     required String password,
   }) async {
-    // CollectionReference collectionRef = FirebaseFirestore.instance.collection('users');
-    // QuerySnapshot snapshot = await collectionRef.where('username', isEqualTo: username).get();
-    // if (snapshot.docs.isNotEmpty) {
-    //   throw Exception('Nickname already existe');
-    // }
-    // this code can check if username already existe, but because of rules in database it does not work, so I have to
-    // Firebase Cloud Function or change rules.
-
     UserCredential userCredential = await firebaseAuth.createUserWithEmailAndPassword(
       email: email, password: password
     );
-
-    // await firestore.collection('users').doc(userCredential.user!.uid).set({
-    //   'createdAt': FieldValue.serverTimestamp(),
-    //   'username': username,
-    //   'dateOfBirth': dateOfBirth,
-    //   'weight': weight,
-    //   'height': height,
-    //   'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
-    // });
 
     await userCredential.user!.sendEmailVerification();
 

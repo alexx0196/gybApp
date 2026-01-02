@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:form_field_validator/form_field_validator.dart';
+import 'package:gym_tracker/db_services/auth_layout.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
-import 'package:gym_tracker/screens/home_screen/home_screen.dart';
 import 'package:intl/intl.dart' as intl;
 
 
@@ -300,10 +300,9 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                         double.parse(_weightController.text),
                         double.parse(_heightController.text),
                       );
-                      print('Finished Registration');
                       Navigator.pushAndRemoveUntil(
                         context, 
-                        MaterialPageRoute(builder: (context) => HomeScreen()), 
+                        MaterialPageRoute(builder: (context) => AuthLayout()), 
                         (route) => false
                       );
                     }
