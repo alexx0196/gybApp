@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
 import 'package:gym_tracker/screens/home_screen/home_screen.dart';
@@ -22,10 +23,8 @@ class _AuthLayoutState extends State<AuthLayout> {
         Widget widget;
         if (snapshot.connectionState == ConnectionState.waiting) {
           widget = AppLoadingPage();
-        } else if (authService.currentUser != null && !authService.currentUser!.emailVerified) {
-          return const EmailVerificationScreen();
         } else if (snapshot.hasData) {
-          widget = const HomeScreen();
+          widget = const OnBoardingRouter();
         } else {
           widget = const LoginScreen();
         }
@@ -45,6 +44,34 @@ class AppLoadingPage extends StatelessWidget {
       body: Center(
         child: CircularProgressIndicator.adaptive(),
       ),
+    );
+  }
+}
+
+
+class OnBoardingRouter extends StatelessWidget {
+  const OnBoardingRouter({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final uid = sl.get<AuthService>().currentUser!.uid;
+
+    return FutureBuilder(
+      future: FirebaseFirestore.instance.collection('users').doc(uid).get(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const AppLoadingPage();
+        }
+
+        final userData = snapshot.data!.data();
+        final emailVerificationCompleted = userData != null && userData['isEmailVerificationCompleted'] == true;
+
+        if (emailVerificationCompleted) {
+          return const HomeScreen();
+        } else {
+          return const EmailVerificationScreen();
+        }
+      },
     );
   }
 }
@@ -70,8 +97,14 @@ class EmailVerificationScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () async {
                 final authService = sl.get<AuthService>();
+
+
                 await authService.currentUser?.reload();
                 if (authService.currentUser!.emailVerified) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(authService.currentUser!.uid)
+                      .update({'isEmailVerificationCompleted': true});
                   Navigator.pushAndRemoveUntil(
                     context, 
                     MaterialPageRoute(builder: (context) => HomeScreen()), 

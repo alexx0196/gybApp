@@ -56,11 +56,13 @@ class AuthService {
 class AuthFireStoreService {
   final fireStore = FirebaseFirestore.instance;
 
-  Future<void> createUserData(String uid, String username, DateTime dateOfBirth, double weight, double height) async {
+  Future<void> createUserData(String uid, String username, DateTime dateOfBirth, String gender, double weight, double height) async {
     await fireStore.collection('users').doc(uid).set({
+      'isEmailVerificationCompleted': false,
       'createdAt': FieldValue.serverTimestamp(),
       'username': username,
       'dateOfBirth': Timestamp.fromDate(dateOfBirth),
+      'gender': gender,
       'weight': weight,
       'height': height,
       'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],

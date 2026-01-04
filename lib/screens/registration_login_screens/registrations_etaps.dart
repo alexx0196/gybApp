@@ -17,14 +17,17 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
 
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
+  bool _obscurePassword1 = true;
 
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _passwordController2 = TextEditingController();
 
   @override
   void dispose() {  
     _emailController.dispose();
     _passwordController.dispose();
+    _passwordController2.dispose();
     super.dispose();
   }
 
@@ -101,6 +104,37 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
                         return null;
                       },
                     ),
+                    const SizedBox(height: 16.0),
+                    TextFormField(
+                      controller: _passwordController2,
+                      decoration: InputDecoration(
+                        labelText: 'Confirm Password',
+                        border: OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword1 ? Icons.visibility_off : Icons.visibility,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _obscurePassword1 = !_obscurePassword1;
+                            });
+                          },
+                        ),
+                      ),
+                      obscureText: _obscurePassword1,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your password';
+                        }
+                        if (value.length < 6) {
+                          return 'Пароль должен быть минимум 6 символов';
+                        }
+                        if (value != _passwordController.text) {
+                          return 'Passwords do not match';
+                        }
+                        return null;
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -112,7 +146,7 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       authService.createAccount(email: _emailController.text, password: _passwordController.text);
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => RegistrationProfileDetails()));
+                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => RegistrationProfileDetails()));
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -155,6 +189,7 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
 
   final _nameController = TextEditingController();
   final _dateController = TextEditingController();
+  final _genderController = TextEditingController();
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
 
@@ -162,6 +197,7 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
   void dispose() {  
     _nameController.dispose();
     _dateController.dispose();
+    _genderController.dispose();
     _weightController.dispose();
     _heightController.dispose();
     super.dispose();
@@ -243,6 +279,64 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                     ),
                     const SizedBox(height: 16.0),
                     TextFormField(
+                      controller: _genderController,
+                      readOnly: true,
+                      decoration: InputDecoration(
+                        labelText: 'Gender',
+                        border: OutlineInputBorder(),
+                        suffixIcon: IconButton(
+                          onPressed: () {
+                            FocusScope.of(context).requestFocus(FocusNode());
+                            showModalBottomSheet(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    ListTile(
+                                      title: Text('Male'),
+                                      onTap: () {
+                                        setState(() {
+                                          _genderController.text = 'Male';
+                                        });
+                                        Navigator.pop(context);
+                                      },
+                                    ),
+                                    ListTile(
+                                      title: Text('Female'),
+                                      onTap: () {
+                                        setState(() {
+                                          _genderController.text = 'Female';
+                                        });
+                                        Navigator.pop(context);
+                                      },
+                                    ),
+                                    ListTile(
+                                      title: Text('Other'),
+                                      onTap: () {
+                                        setState(() {
+                                          _genderController.text = 'Other';
+                                        });
+                                        Navigator.pop(context);
+                                      },
+                                    ),
+                                  ],
+                                );
+                              },
+                            );
+                          },
+                          icon: Icon(Icons.arrow_drop_down),
+                        ),
+                      ),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Please enter your gender';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 16.0),
+                    TextFormField(
                       controller: _weightController,
                       keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
@@ -297,6 +391,7 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                         authService.currentUser!.uid,
                         _nameController.text,
                         intl.DateFormat('yyyy-MM-dd').parse(_dateController.text),
+                        _genderController.text,
                         double.parse(_weightController.text),
                         double.parse(_heightController.text),
                       );
