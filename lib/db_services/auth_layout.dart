@@ -66,6 +66,7 @@ class OnBoardingRouter extends StatelessWidget {
         final userData = snapshot.data!.data();
         final emailVerificationCompleted = userData != null && userData['isEmailVerificationCompleted'] == true;
 
+        // return LoginScreen();
         if (emailVerificationCompleted) {
           return const HomeScreen();
         } else {

@@ -67,11 +67,63 @@ class AuthFireStoreService {
       'height': height,
       'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
     });
+
+    addWeightEntry(uid, weight);
   }
 
   Future<DocumentSnapshot<Map<String, dynamic>>> getUserData(String uid) async {
     final doc = await fireStore.collection('users').doc(uid).get();
     return doc;
+  }
+
+  Future<List<Map<String, dynamic>>> getWeightHistory(String uid) async {
+    final snapshot = await fireStore.collection('users').doc(uid).collection('weight_history').orderBy('date').get();
+
+    List<Map<String, dynamic>> weightData = [];
+
+    snapshot.docs.map((doc) {
+      final data = doc.data();
+      weightData.add({
+        'weight': (data['weight'] as num).toDouble(),
+        'date': (data['date'] as Timestamp).toDate(),
+      });
+    }).toList();
+
+    // final firstDate = snapshot.docs.isNotEmpty ? snapshot.docs.first['createdAt'] as Timestamp : null;
+    // final lastDate = snapshot.docs.isNotEmpty ? snapshot.docs.last['createdAt'] as Timestamp : null;
+    return weightData;
+  }
+
+  Future<void> addWeightEntry(String uid, double weight) async {
+    final now = DateTime.now();
+    final startOfDay = DateTime(now.year, now.month, now.day);
+    final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+
+    final querySnapshot = await fireStore.collection('users').doc(uid).collection('weight_history').where(
+      'date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay)
+    ).where(
+      'date', isLessThanOrEqualTo: Timestamp.fromDate(startOfTomorrow)
+    ).limit(1).get();
+    
+    if (querySnapshot.docs.isNotEmpty) {
+      await fireStore.collection('users').doc(uid).collection('weight_history').doc(querySnapshot.docs.first.id).update({
+        'weight': weight,
+      });
+
+      await fireStore.collection('users').doc(uid).update({
+        'weight': weight,
+      });
+      return;
+    }
+
+    await fireStore.collection('users').doc(uid).collection('weight_history').doc().set({
+      'weight': weight,
+      'date': FieldValue.serverTimestamp(),
+    });
+
+    await fireStore.collection('users').doc(uid).update({
+      'weight': weight,
+    });
   }
 }
 
