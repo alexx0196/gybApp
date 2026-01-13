@@ -50,11 +50,37 @@ class AuthService {
 
     return userCredential; 
   }
+
+  Future<void> reAuthUser({required String enteredPassword}) async {
+    final credential = EmailAuthProvider.credential(
+      email: currentUser!.email!,
+      password: enteredPassword,
+    );
+
+    await currentUser!.reauthenticateWithCredential(credential);
+  }
+
+  Future<void> changeEmail({required String email}) async {
+    await currentUser!.verifyBeforeUpdateEmail(email);
+    await currentUser!.reload();
+  }
 }
 
 
 class AuthFireStoreService {
   final fireStore = FirebaseFirestore.instance;
+
+  Future<bool> isUsernameTaken(String uid, String username) async {
+    try {
+      await fireStore.collection('nicknames').doc(username.toLowerCase().replaceAll(' ', '_')).set({
+        'uid': uid,
+      });
+      print('sss');
+      return false;
+    } catch (e) {
+      return true;
+    }
+  }
 
   Future<void> createUserData(String uid, String username, DateTime dateOfBirth, String gender, double weight, double height) async {
     await fireStore.collection('users').doc(uid).set({

@@ -203,6 +203,31 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
     super.dispose();
   }
 
+  void finishRegistration() async {
+    if (_formKey.currentState!.validate()) {
+      if (await authFireStoreService.isUsernameTaken(authService.currentUser!.uid, _nameController.text)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Username is already taken')),
+        );
+        return;
+      } else {
+        authFireStoreService.createUserData(
+          authService.currentUser!.uid,
+          _nameController.text,
+          intl.DateFormat('yyyy-MM-dd').parse(_dateController.text),
+          _genderController.text,
+          double.parse(_weightController.text),
+          double.parse(_heightController.text),
+        );
+        Navigator.pushAndRemoveUntil(
+          context, 
+          MaterialPageRoute(builder: (context) => AuthLayout()), 
+          (route) => false
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -385,23 +410,7 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                 width: double.infinity,
                 height: 49,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      authFireStoreService.createUserData(
-                        authService.currentUser!.uid,
-                        _nameController.text,
-                        intl.DateFormat('yyyy-MM-dd').parse(_dateController.text),
-                        _genderController.text,
-                        double.parse(_weightController.text),
-                        double.parse(_heightController.text),
-                      );
-                      Navigator.pushAndRemoveUntil(
-                        context, 
-                        MaterialPageRoute(builder: (context) => AuthLayout()), 
-                        (route) => false
-                      );
-                    }
-                  },
+                  onPressed: () => finishRegistration(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF3B62FF),
                     shape: RoundedRectangleBorder(

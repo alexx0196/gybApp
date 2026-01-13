@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:form_field_validator/form_field_validator.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
 import 'package:gym_tracker/screens/home_screen/home_screen.dart';
 import 'package:gym_tracker/screens/registration_login_screens/login_screen.dart';
@@ -78,9 +80,140 @@ class OnBoardingRouter extends StatelessWidget {
 }
 
 
-class EmailVerificationScreen extends StatelessWidget {
+class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
 
+  @override
+  State<EmailVerificationScreen> createState() => _EmailVerificationScreenState();
+}
+
+class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
+  AuthService authService = sl.get<AuthService>();
+
+  String? currentEmail = '';
+
+  final _emailFormKey = GlobalKey<FormState>();
+  final _newEmailController = TextEditingController();
+
+  final _passwordFormKey = GlobalKey<FormState>();
+  final _enteredPassword = TextEditingController();
+
+  @override
+  void dispose() {
+    _enteredPassword.dispose();
+    _newEmailController.dispose();
+    super.dispose();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    currentEmail = authService.currentUser?.email;
+  }
+
+  // Если пользователь зарегистрировался, ему отравилось письмо и он долго его не подтверждал, то вызовется requires-recent-login.
+  // это означает, что мне надо еще раз пользователя обновить, для этого я тут пароль проверяю.
+  Future<void> _checkPasswordForChangeEmail({required String email}) {
+    return showDialog(
+      context: context, 
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Нужно, чтобы вы ввели пароль'),
+          content: Form(
+            key: _passwordFormKey,
+            child: TextFormField(
+              controller: _enteredPassword,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+              validator: MultiValidator([
+                RequiredValidator(errorText: 'Please enter your password'),
+              ],).call,
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                if (!_passwordFormKey.currentState!.validate()) return;
+                await authService.reAuthUser(enteredPassword: _enteredPassword.text);
+                await authService.changeEmail(email: email);
+                Navigator.of(context).pop();
+              }, 
+              child: const Text('Next'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(), 
+              child: const Text('Cancel'),
+            ),
+          ],
+        );
+      }
+    );
+  }
+
+  Future<void> _changeEmailAlert() {
+    return showDialog(
+      context: context, 
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Change email'),
+          content: Form(
+            key: _emailFormKey,
+            child: TextFormField(
+              controller: _newEmailController,
+              keyboardType: TextInputType.emailAddress,
+              decoration: InputDecoration(
+                labelText: 'New email',
+                border: OutlineInputBorder(),
+              ),
+              validator: MultiValidator([
+                RequiredValidator(errorText: 'Please enter your email'),
+                EmailValidator(errorText: 'Please enter a valid email address'),
+              ],).call,
+            ),
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () async {
+                if (!_emailFormKey.currentState!.validate()) return;
+                try {
+                  await authService.changeEmail(
+                    email: _newEmailController.text,
+                  );
+
+                  setState(() {
+                    currentEmail = _newEmailController.text;
+                  });
+
+                  Navigator.of(context).pop();
+                } on FirebaseAuthException catch (e) {
+                  if (e.code == 'requires-recent-login') {
+                    Navigator.of(context).pop();
+                    await _checkPasswordForChangeEmail(email: _newEmailController.text);
+                  } else {
+                    print(e.code);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(e.code),
+                      ),
+                    );
+                  }
+                }
+              }, 
+              child: const Text('Change'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(), 
+              child: const Text('Cancel'),
+            )
+          ],
+        );
+      }
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -91,21 +224,38 @@ class EmailVerificationScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('A verification link has been sent to your email.'),
+            Text('A verification link has been sent to your email($currentEmail).'),
             SizedBox(height: 16),
             Text('Please verify your email to continue.'),
             SizedBox(height: 16),
             ElevatedButton(
+              onPressed: () => _changeEmailAlert(), 
+              child: const Text('Change email')
+            ),
+            SizedBox(height: 16,),
+            ElevatedButton(
               onPressed: () async {
                 final authService = sl.get<AuthService>();
+                
+                // при обновление почты оно, видимо, вызвается к старому токену, который не обновляется после обновления почты, и появляется
+                // ошибка user-token-expired. в ее случае я просто логаут делаю.
+                try {
+                  await authService.currentUser?.reload();
+                } on FirebaseAuthException catch (e) {
+                  if (e.code == 'user-token-expired') {
+                    await authService.signOut();
+                    return;
+                  }
+                }
 
-
-                await authService.currentUser?.reload();
                 if (authService.currentUser!.emailVerified) {
                   await FirebaseFirestore.instance
                       .collection('users')
                       .doc(authService.currentUser!.uid)
                       .update({'isEmailVerificationCompleted': true});
+                  
+                  if (!context.mounted) return;
+
                   Navigator.pushAndRemoveUntil(
                     context, 
                     MaterialPageRoute(builder: (context) => HomeScreen()), 
