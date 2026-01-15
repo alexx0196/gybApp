@@ -154,8 +154,13 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
                         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => RegistrationProfileDetails()), (route) => false);
                       } on FirebaseAuthException catch(e) {
                         if (e.code == 'email-already-in-use') {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Email is already taken')),
+                          ScaffoldMessenger.of(context)
+                          ..removeCurrentSnackBar()
+                          ..showSnackBar(
+                            const SnackBar(
+                              content: Text('Почта уже используется'),
+                              duration: Duration(seconds: 1),
+                            ),
                           );
                           return;
                         }

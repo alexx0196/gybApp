@@ -7,22 +7,6 @@ import 'package:gym_tracker/screens/home_screen/home_screen.dart';
 import 'package:gym_tracker/screens/registration_login_screens/registrations_etaps.dart';
 
 
-String _mapAuthErrorToMessage(String? code) {
-  switch (code) {
-    case 'invalid-email':
-      return 'The email address is not valid.';
-    case 'user-disabled':
-      return 'This user has been disabled.';
-    case 'user-not-found':
-      return 'No user found for that email.';
-    case 'wrong-password':
-      return 'Wrong password provided for that user.';
-    default:
-      return 'An undefined Error happened.';
-  }
-}
-
-
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -41,25 +25,19 @@ class _LoginScreen extends State<LoginScreen> {
   String? authError;
 
   Future<void> login() async {
-    setState(() {
-      authError = null;
-    });
-
     try {
       await authService.signIn(email: email.text, password: password.text);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'unknown-error') {
-        setState(() {
-          authError = 'Something wrong happened. Please try again later.';
-        });
-      } else if (e.code == 'too-many-requests') {
-        setState(() {
-          authError = 'Too many requests. Please try again later.';
-        });
-      } else {
-        setState(() {
-          authError = _mapAuthErrorToMessage(e.code);
-        });
+        ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Неверный email или пароль'),
+            duration: Duration(seconds: 1),
+          ),
+        );
+        return;
       }
     }
   }
@@ -118,16 +96,6 @@ class _LoginScreen extends State<LoginScreen> {
                       ),
                       validator: RequiredValidator(errorText: 'Password is required').call,
                     ),
-                    if (authError != null) ...[
-                      SizedBox(height: 16.0,),
-                      Text(
-                        authError!,
-                        style: TextStyle(
-                          color: Colors.red,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
                   ],
                 ),
               ),
