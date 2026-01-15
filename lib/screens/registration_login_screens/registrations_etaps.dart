@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:form_field_validator/form_field_validator.dart';
 import 'package:gym_tracker/db_services/auth_layout.dart';
@@ -126,11 +127,14 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your password';
                         }
-                        if (value.length < 6) {
-                          return 'Пароль должен быть минимум 6 символов';
-                        }
                         if (value != _passwordController.text) {
                           return 'Passwords do not match';
+                        }
+                        if (value.length < 8) {
+                          return 'Пароль должен быть минимум 8 символов';
+                        }
+                        if (['123456', '12345678', 'qwerty', 'password', '111111', '123123', 'abc123', 'letmein', 'admin', 'welcome'].contains(value.toLowerCase())) {
+                          return 'Пароль слишком слабый';
                         }
                         return null;
                       },
@@ -143,10 +147,19 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
                 width: double.infinity,
                 height: 49,
                 child: ElevatedButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      authService.createAccount(email: _emailController.text, password: _passwordController.text);
-                      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => RegistrationProfileDetails()));
+                      try {
+                        await authService.createAccount(email: _emailController.text, password: _passwordController.text);
+                        Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => RegistrationProfileDetails()), (route) => false);
+                      } on FirebaseAuthException catch(e) {
+                        if (e.code == 'email-already-in-use') {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Email is already taken')),
+                          );
+                          return;
+                        }
+                      }
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -206,8 +219,13 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
   void finishRegistration() async {
     if (_formKey.currentState!.validate()) {
       if (await authFireStoreService.isUsernameTaken(authService.currentUser!.uid, _nameController.text)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Username is already taken')),
+        ScaffoldMessenger.of(context)
+        ..removeCurrentSnackBar()
+        ..showSnackBar(
+          const SnackBar(
+            content: Text('Этот ник уже занят'),
+            duration: Duration(seconds: 1),
+          ),
         );
         return;
       } else {
@@ -309,50 +327,48 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
                       decoration: InputDecoration(
                         labelText: 'Gender',
                         border: OutlineInputBorder(),
-                        suffixIcon: IconButton(
-                          onPressed: () {
-                            FocusScope.of(context).requestFocus(FocusNode());
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    ListTile(
-                                      title: Text('Male'),
-                                      onTap: () {
-                                        setState(() {
-                                          _genderController.text = 'Male';
-                                        });
-                                        Navigator.pop(context);
-                                      },
-                                    ),
-                                    ListTile(
-                                      title: Text('Female'),
-                                      onTap: () {
-                                        setState(() {
-                                          _genderController.text = 'Female';
-                                        });
-                                        Navigator.pop(context);
-                                      },
-                                    ),
-                                    ListTile(
-                                      title: Text('Other'),
-                                      onTap: () {
-                                        setState(() {
-                                          _genderController.text = 'Other';
-                                        });
-                                        Navigator.pop(context);
-                                      },
-                                    ),
-                                  ],
-                                );
-                              },
+                        suffixIcon: Icon(Icons.arrow_drop_down),
+                      ),
+                      onTap: () {
+                        FocusScope.of(context).requestFocus(FocusNode());
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: <Widget>[
+                                ListTile(
+                                  title: Text('Male'),
+                                  onTap: () {
+                                    setState(() {
+                                      _genderController.text = 'Male';
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                                ListTile(
+                                  title: Text('Female'),
+                                  onTap: () {
+                                    setState(() {
+                                      _genderController.text = 'Female';
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                                ListTile(
+                                  title: Text('Other'),
+                                  onTap: () {
+                                    setState(() {
+                                      _genderController.text = 'Other';
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                ),
+                              ],
                             );
                           },
-                          icon: Icon(Icons.arrow_drop_down),
-                        ),
-                      ),
+                        );
+                      },
                       validator: (value) {
                         if (value == null || value.isEmpty) {
                           return 'Please enter your gender';

@@ -219,51 +219,86 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Email Verification'),
+        elevation: 0,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('A verification link has been sent to your email($currentEmail).'),
-            SizedBox(height: 16),
-            Text('Please verify your email to continue.'),
-            SizedBox(height: 16),
-            ElevatedButton(
+            Text(
+              'Please verify your email to continue.',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 30),
+            Text.rich(
+              TextSpan(
+                children: <TextSpan>[
+                  TextSpan(text: 'A verification link has been sent to your email('),
+                  TextSpan(
+                    text: currentEmail,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  TextSpan(text: ').'),
+                ],
+              ),
+            ),
+            SizedBox(height: 14,),
+            Padding(
+              padding: EdgeInsets.only(left: 16.0, right: 16.0),
+              child: SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: ElevatedButton(
+                  onPressed: () async {
+                    final authService = sl.get<AuthService>();
+                    
+                    // при обновление почты оно, видимо, вызвается к старому токену, который не обновляется после обновления почты, и появляется
+                    // ошибка user-token-expired. в ее случае я просто логаут делаю.
+                    try {
+                      await authService.currentUser?.reload();
+                    } on FirebaseAuthException catch (e) {
+                      if (e.code == 'user-token-expired') {
+                        await authService.signOut();
+                        return;
+                      }
+                    }
+
+                    if (authService.currentUser!.emailVerified) {
+                      await FirebaseFirestore.instance
+                          .collection('users')
+                          .doc(authService.currentUser!.uid)
+                          .update({'isEmailVerificationCompleted': true});
+                      
+                      if (!context.mounted) return;
+
+                      Navigator.pushAndRemoveUntil(
+                        context, 
+                        MaterialPageRoute(builder: (context) => HomeScreen()), 
+                        (route) => false,
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context)
+                      ..removeCurrentSnackBar()
+                      ..showSnackBar(
+                        const SnackBar(
+                          content: Text('Нужно подтвердить почту'),
+                          duration: Duration(seconds: 1),
+                        ),
+                      );
+                      return;
+                    }
+                  }, 
+                  child: const Text('Continue'),
+                ),
+              ),
+            ),
+            SizedBox(height: 8,),
+            OutlinedButton(
               onPressed: () => _changeEmailAlert(), 
               child: const Text('Change email')
-            ),
-            SizedBox(height: 16,),
-            ElevatedButton(
-              onPressed: () async {
-                final authService = sl.get<AuthService>();
-                
-                // при обновление почты оно, видимо, вызвается к старому токену, который не обновляется после обновления почты, и появляется
-                // ошибка user-token-expired. в ее случае я просто логаут делаю.
-                try {
-                  await authService.currentUser?.reload();
-                } on FirebaseAuthException catch (e) {
-                  if (e.code == 'user-token-expired') {
-                    await authService.signOut();
-                    return;
-                  }
-                }
-
-                if (authService.currentUser!.emailVerified) {
-                  await FirebaseFirestore.instance
-                      .collection('users')
-                      .doc(authService.currentUser!.uid)
-                      .update({'isEmailVerificationCompleted': true});
-                  
-                  if (!context.mounted) return;
-
-                  Navigator.pushAndRemoveUntil(
-                    context, 
-                    MaterialPageRoute(builder: (context) => HomeScreen()), 
-                    (route) => false,
-                  );
-                }
-              }, 
-              child: const Text('Continue'),
             ),
           ],
         ),
