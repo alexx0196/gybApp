@@ -73,79 +73,85 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                 sets,
               );
               Navigator.pop(context);
-              if (widget.exerciseId.isEmpty) {
-                Navigator.pop(context);
-              }
             },
           ),
         ],
       ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Add Info About Exercise Screen'),
-            Text(widget.exerciseName),
-            Expanded(
-              child: ListView.builder(
-                itemCount: sets.length,
-                itemBuilder: (context, index) {
-                  return ListTile(
-                    title: Text('Set ${index + 1}'),
-                    subtitle: Row(
-                      children: [
-                        Expanded(
-                          child: Text('Reps: ${sets.values.toList()[index].reps}, Weight: ${sets.values.toList()[index].weight} kg'),
-                        ),
-                        ElevatedButton(
-                          onPressed: () => {
-                            setState(() {
-                              sets.remove(index);
-                              sets = {
-                                for (int i = 0; i < sets.length; i++)
-                                  i: sets.values.toList()[i],
-                              };
-                            })
-                          }, 
-                          child: const Icon(Icons.delete)
-                        )
-                      ]
-                    ),
-                    onTap: () async {
-                      final result = await showModalBottomSheet(
-                        context: context, 
-                        builder: (_) => AddSetBottomSheet(
-                          reps: sets.values.toList()[index].reps,
-                          weight: sets.values.toList()[index].weight,
-                        ),
-                      );
-                      setState(() {
-                        sets[index] = ExerciseSet(
-                          reps: result.reps,
-                          weight: result.weight,
-                        );
-                      });
-                    },
-                  );
-                },
+      body: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                widget.exerciseName,
+                style: TextStyle(
+                  fontSize: 22.0,
+                ),
               ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final result = await showModalBottomSheet(
-                  context: context, 
-                  builder: (_) => AddSetBottomSheet(),
-                );
-                setState(() {
-                  sets[sets.length] = ExerciseSet(
-                    reps: result.reps,
-                    weight: result.weight,
+              const Text('Add Info About Exercise Screen'),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: sets.length,
+                  itemBuilder: (context, index) {
+                    return ListTile(
+                      title: Text('Set ${index + 1}'),
+                      subtitle: Row(
+                        children: [
+                          Expanded(
+                            child: Text('Reps: ${sets.values.toList()[index].reps}, Weight: ${sets.values.toList()[index].weight} kg'),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => {
+                              setState(() {
+                                sets.remove(index);
+                                sets = {
+                                  for (int i = 0; i < sets.length; i++)
+                                    i: sets.values.toList()[i],
+                                };
+                              })
+                            }, 
+                            child: const Icon(Icons.delete)
+                          )
+                        ]
+                      ),
+                      onTap: () async {
+                        final result = await showModalBottomSheet(
+                          context: context, 
+                          builder: (_) => AddSetBottomSheet(
+                            reps: sets.values.toList()[index].reps,
+                            weight: sets.values.toList()[index].weight,
+                          ),
+                        );
+                        setState(() {
+                          sets[index] = ExerciseSet(
+                            reps: result.reps,
+                            weight: result.weight,
+                          );
+                        });
+                      },
+                    );
+                  },
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  final result = await showModalBottomSheet(
+                    context: context, 
+                    builder: (_) => AddSetBottomSheet(),
                   );
-                });
-              }, 
-              child: const Text('Add Set'),
-            ),
-          ],
+                  if (result == null || result.reps == 0) return;
+                  setState(() {
+                    sets[sets.length] = ExerciseSet(
+                      reps: result.reps,
+                      weight: result.weight,
+                    );
+                  });
+                }, 
+                child: const Text('Add Set'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -206,16 +212,25 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
             ],
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop(
-                ExerciseSet(
-                  reps: int.parse(_repsController.text),
-                  weight: double.parse(_weightController.text),
-                ),
-              );
-            },
-            child: const Text('Add'),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).pop(
+                    ExerciseSet(
+                      reps: int.parse(_repsController.text),
+                      weight: double.parse(_weightController.text),
+                    ),
+                  );
+                },
+                child: const Text('Add'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(), 
+                child: const Text('Cancel')
+              ),
+            ],
           ),
         ],
       ),

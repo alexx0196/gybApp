@@ -193,7 +193,6 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     Navigator.of(context).pop();
                     await _checkPasswordForChangeEmail(email: _newEmailController.text);
                   } else {
-                    print(e.code);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(e.code),

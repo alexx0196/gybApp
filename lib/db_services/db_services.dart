@@ -20,11 +20,12 @@ class AuthService {
   Stream<User?> get authStateChanges => firebaseAuth.authStateChanges();
 
   Future<void> signOut() async {
-    try {
-      await firebaseAuth.signOut();
-    } on FirebaseAuthException catch (e) {
-      print(e.code);
-    }
+    await firebaseAuth.signOut();
+    // try {
+    //   await firebaseAuth.signOut();
+    // } on FirebaseAuthException catch (e) {
+    //   // print(e.code);
+    // }
   }
 
   Future<void> signIn({
@@ -74,7 +75,6 @@ class AuthFireStoreService {
       await fireStore.collection('nicknames').doc(username.toLowerCase().replaceAll(' ', '_')).set({
         'uid': uid,
       });
-      print('sss');
       return false;
     } catch (e) {
       return true;

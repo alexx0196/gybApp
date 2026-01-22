@@ -77,7 +77,9 @@ class _ExercisesScreenState extends State<ExercisesScreen> {
 
                   return ListTile(
                     title: Center(child: Text(data)),
-                    onTap: () => print('change or delete exercise'),
+                    onTap: () => {
+                      // print('change or delete exercise')
+                    },
                   );
                 }
               ),),

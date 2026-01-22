@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gym_tracker/db_services/db_services.dart';
 import 'package:gym_tracker/screens/workout_screen/add_info_about_exercise.dart';
-import 'package:gym_tracker/screens/workout_screen/choose_exercise.dart';
 
 
 class WorkoutScreen extends StatefulWidget {
@@ -14,6 +13,7 @@ class WorkoutScreen extends StatefulWidget {
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
   WorkoutsService workoutsService = WorkoutsService();
+  CollectionService collectionService = CollectionService();
   final authService = sl.get<AuthService>();
 
   void _exerciseAlertDialog(String exerciseId, List exercises, int index) {
@@ -57,6 +57,54 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     );
   }
 
+  void _chooseEcercise(String workoutId) async {
+    return await showDialog(
+      context: context, 
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Choose exercices'),
+          content: SizedBox(
+            width: MediaQuery.of(context).size.width * 0.4,
+            height: MediaQuery.of(context).size.height * 0.4,
+            child: StreamBuilder(
+              stream: collectionService.getAllExercises(authService.currentUser!.uid), 
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                }
+                
+                if (snapshot.hasError) {
+                  return Text('Error loading exercises');
+                }
+                final exerciseList = snapshot.data ?? [];
+
+                return ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: exerciseList.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    return ListTile(
+                      title: Center(child: Text(exerciseList[index])),
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        Navigator.push(
+                          context, 
+                          MaterialPageRoute(builder: (context) => AddInfoAboutExercise(
+                            exerciseName: exerciseList[index], 
+                            workoutId: workoutId,
+                          ),)
+                        );
+                      },
+                    );
+                  },
+                );
+              }
+            ),
+          ),
+        );
+      }
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -100,10 +148,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (context) => ChooseExercise(workoutId: widget.id,))
-          );
+          _chooseEcercise(widget.id);
         },
         child: Icon(Icons.add),
       ),
