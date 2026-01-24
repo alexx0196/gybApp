@@ -117,7 +117,8 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                       ),
                       onTap: () async {
                         final result = await showModalBottomSheet(
-                          context: context, 
+                          context: context,
+                          isScrollControlled: true,
                           builder: (_) => AddSetBottomSheet(
                             reps: sets.values.toList()[index].reps,
                             weight: sets.values.toList()[index].weight,
@@ -187,53 +188,60 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _repsController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Reps'),
+    return SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          top: 16,
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _repsController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Reps'),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: TextField(
-                  controller: _weightController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Weight'),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _weightController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(labelText: 'Weight'),
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.of(context).pop(
-                    ExerciseSet(
-                      reps: int.parse(_repsController.text),
-                      weight: double.parse(_weightController.text),
-                    ),
-                  );
-                },
-                child: const Text('Add'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(), 
-                child: const Text('Cancel')
-              ),
-            ],
-          ),
-        ],
-      ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(
+                      ExerciseSet(
+                        reps: int.parse(_repsController.text),
+                        weight: double.parse(_weightController.text.replaceAll(',', '.')),
+                      ),
+                    );
+                  },
+                  child: const Text('Add'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(), 
+                  child: const Text('Cancel')
+                ),
+              ],
+            ),
+          ],
+        ),
+      )
     );
   }
 }

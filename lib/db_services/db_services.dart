@@ -225,6 +225,21 @@ class WorkoutsService {
     return doc;
   }
 
+  Future<void> deleteWorkout(String uid, String workoutId) async {
+    final workoutRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId);
+    
+    final exercisesSnapshot = await workoutRef.collection('exercises').get();
+    for (final exerciseDoc in exercisesSnapshot.docs) {
+      final setsSnapshot = await exerciseDoc.reference.collection('sets').get();
+      for (final setDoc in setsSnapshot.docs) {
+        await setDoc.reference.delete();
+      }
+      await exerciseDoc.reference.delete();
+    }
+
+    await workoutRef.delete();
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>>> getExercisesFromWorkout(String uid, String workoutId) {
     final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').snapshots();
     return doc;

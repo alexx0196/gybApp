@@ -16,47 +16,6 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   CollectionService collectionService = CollectionService();
   final authService = sl.get<AuthService>();
 
-  void _exerciseAlertDialog(String exerciseId, List exercises, int index) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Exercise'),
-          content: const Text('Choose an exercise to add to your workout.'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Delete'),
-              onPressed: () {
-                workoutsService.deleteExerciseFromWorkout(
-                  authService.currentUser!.uid,
-                  widget.id,
-                  exerciseId,
-                );
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Change'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.push(
-                  context, 
-                  MaterialPageRoute(
-                    builder: (context) => AddInfoAboutExercise(
-                      exerciseName: exercises[index]['name'],
-                      workoutId: widget.id,
-                      exerciseId: exercises[index].id,
-                    )
-                  )
-                );
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   void _chooseEcercise(String workoutId) async {
     return await showDialog(
       context: context, 
@@ -127,22 +86,44 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
 
             final exercises = snapshot.data!.docs;
             
-            return Column(children: [
-              Expanded(child: ListView.builder(
-                padding: const EdgeInsets.all(8.0),
-                itemCount: exercises.length,
-                itemBuilder: (BuildContext context, int index) {
-                  return ListTile(
-                    title: Center(child: Text(exercises[index]['name'])),
-                    onTap: () => _exerciseAlertDialog(
-                      exercises[index].id,
-                      exercises,
-                      index,
-                    ),
-                  );
-                }
-              ),),
-            ],);
+            return Column(
+              children: [
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.all(8.0),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    itemCount: exercises.length,
+                    itemBuilder: (BuildContext context, int index) {
+                      return ListTile(
+                        title: Center(child: Text(exercises[index]['name'])),
+                        onTap: () {
+                          Navigator.push(
+                            context, 
+                            MaterialPageRoute(
+                              builder: (context) => AddInfoAboutExercise(
+                                exerciseName: exercises[index]['name'],
+                                workoutId: widget.id,
+                                exerciseId: exercises[index].id,
+                              )
+                            )
+                          );
+                        },
+                        onLongPress: () {
+                          workoutsService.deleteExerciseFromWorkout(
+                            authService.currentUser!.uid,
+                            widget.id,
+                            exercises[index].id,
+                          );
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Exercise ${exercises[index]['name']} deleted')),
+                          );
+                        },
+                      );
+                    }  
+                  ),
+                ),
+              ],
+            );
           }
         )
       ),
