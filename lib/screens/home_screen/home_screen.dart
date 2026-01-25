@@ -131,18 +131,62 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         )
       ),
+      // floatingActionButton: FloatingActionButton(
+      //   onPressed: () async {
+      //     try {
+      //       await workoutsService.addWorkout(authService.currentUser!.uid);
+      //     } on WorkoutAlreadyExistsException catch (e) {
+      //       Navigator.push(
+      //         context, 
+      //         MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
+      //       );
+      //     }
+      //   },
+      //   child: Icon(Icons.add),
+      // ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () async {
-          try {
-            await workoutsService.addWorkout(authService.currentUser!.uid);
-          } on WorkoutAlreadyExistsException catch (e) {
-            Navigator.push(
-              context, 
-              MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
-            );
-          }
+        child: PopupMenuButton(
+          icon: Icon(Icons.add),
+          onSelected: (item) async {
+            if (item == 'add_workout') {
+              try {
+                await workoutsService.addWorkout(authService.currentUser!.uid);
+              } on WorkoutAlreadyExistsException catch (e) {
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
+                );
+              }
+            } else if (item == 'select_date') {
+              final DateTime? pickedDate = await showDatePicker(
+                context: context,
+                initialDate: DateTime.now(),
+                firstDate: DateTime(2000),
+                lastDate: DateTime(2100),
+              );
+              if (pickedDate != null) {
+                try {
+                  await workoutsService.addWorkoutWithDate(
+                    authService.currentUser!.uid, 
+                    pickedDate
+                  );
+                } on WorkoutAlreadyExistsException catch (e) {
+                  Navigator.push(
+                    context, 
+                    MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
+                  );
+                }
+              }
+            }
+          },
+          itemBuilder: (BuildContext context) => <PopupMenuEntry>[
+            const PopupMenuItem(value: 'add_workout', child: Text('Добавить тренировку')),
+            const PopupMenuItem(value: 'select_date', child: Text('Выбрать дату')),
+          ],
+        ),
+        onPressed: () {
+          
         },
-        child: Icon(Icons.add),
       ),
       drawer: AppDrawer(),
     );

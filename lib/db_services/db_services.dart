@@ -215,8 +215,29 @@ class WorkoutsService {
     return docRef.id;
   }
 
+  Future<String> addWorkoutWithDate(String uid, DateTime date) async {
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final startOfTomorrow = startOfDay.add(const Duration(days: 1));
+
+    final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(); 
+
+    final querySnapshot = await fireStore.collection('users').doc(uid).collection('workouts')
+    .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+    .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(startOfTomorrow)).limit(1).get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      throw WorkoutAlreadyExistsException(querySnapshot.docs.first.id);
+    } else {
+      await docRef.set({
+        'createdAt': Timestamp.fromDate(startOfDay),
+      });
+    }
+    // SetOptions(merge: true); // нужно чтобы обновить документ, не создавая новый
+    return docRef.id;
+  }
+
   Stream<QuerySnapshot<Map<String, dynamic>?>> getAllWorkouts(String uid) {
-    final doc = fireStore.collection('users').doc(uid).collection('workouts').snapshots();
+    final doc = fireStore.collection('users').doc(uid).collection('workouts').orderBy('createdAt', descending: true).snapshots();
     return doc;
   }
 
