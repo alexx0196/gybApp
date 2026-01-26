@@ -131,19 +131,6 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         )
       ),
-      // floatingActionButton: FloatingActionButton(
-      //   onPressed: () async {
-      //     try {
-      //       await workoutsService.addWorkout(authService.currentUser!.uid);
-      //     } on WorkoutAlreadyExistsException catch (e) {
-      //       Navigator.push(
-      //         context, 
-      //         MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
-      //       );
-      //     }
-      //   },
-      //   child: Icon(Icons.add),
-      // ),
       floatingActionButton: FloatingActionButton(
         child: PopupMenuButton(
           icon: Icon(Icons.add),
@@ -184,9 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
             const PopupMenuItem(value: 'select_date', child: Text('Выбрать дату')),
           ],
         ),
-        onPressed: () {
-          
-        },
+        onPressed: () {},
       ),
       drawer: AppDrawer(),
     );

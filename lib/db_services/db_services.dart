@@ -269,13 +269,37 @@ class WorkoutsService {
   Future<Map<int, ExerciseSet>> getCertainExercise(String uid, String workoutId, String exerciseId) async {
     final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises')
                 .doc(exerciseId).collection('sets').orderBy(FieldPath.documentId).get();
-    final Map<int, ExerciseSet> sets = {
-      for (final doc in snapshot.docs)
-        int.parse(doc.id): ExerciseSet(
-          reps: doc['reps'],
-          weight: (doc['weight'] as num).toDouble(),
-        ),
-    };
+
+    // это нужно, если isWarmUp(отвечает за разминку) может отсутствовать в старых записях
+    // очень важно это потом удалить, когда все данные будут с этим полем!!!
+    final batch = FirebaseFirestore.instance.batch();
+    for (final i in snapshot.docs) {
+      final data = i.data() as Map<String, dynamic>?;
+
+      // если поля нет, добавляем isWarmUp = true
+      if (data == null || !data.containsKey('isWarmUp')) {
+        batch.set(
+          i.reference, 
+          {'isWarmUp': false},
+          SetOptions(merge: true)
+        );
+      }
+    }
+    batch.commit();
+
+    final Map<int, ExerciseSet> sets = {};
+
+    for (final i in snapshot.docs) {
+      final data = i.data() as Map<String, dynamic>?;
+
+      // если поля нет, добавляем isWarmUp = true
+      sets[int.parse(i.id)] = ExerciseSet(
+        reps: data?['reps'] ?? 0,
+        weight: (data?['weight'] as num?)?.toDouble() ?? 0.0,
+        isWarmUp: data != null && data.containsKey('isWarmUp') ? data['isWarmUp'] : false,
+      );
+    }
+
     return sets;
   }
 
@@ -300,6 +324,7 @@ class WorkoutsService {
       docRef.collection('sets').doc(key.toString()).set({
         'reps': value.reps,
         'weight': value.weight,
+        'isWarmUp': value.isWarmUp,
       }, SetOptions(merge: true));
     });
     return docRef.id;

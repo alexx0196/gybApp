@@ -41,6 +41,7 @@ dependencies:
   intl: ^0.20.2
   form_field_validator: ^1.1.0
   syncfusion_flutter_charts: ^31.1.19
+  firebase_admin: ^0.3.1
 
 dev_dependencies:
   flutter_test:

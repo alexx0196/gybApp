@@ -13,7 +13,8 @@ TextEditingController, валидировать и возвращать гото
 class ExerciseSet {
   int reps;
   double weight;
-  ExerciseSet({required this.reps, required this.weight});
+  bool isWarmUp;
+  ExerciseSet({required this.reps, required this.weight, required this.isWarmUp});
 }
 
 
@@ -101,6 +102,7 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                           Expanded(
                             child: Text('Reps: ${sets.values.toList()[index].reps}, Weight: ${sets.values.toList()[index].weight} kg'),
                           ),
+                          Expanded(child: Text(sets.values.toList()[index].isWarmUp ? 'Warm-up' : 'Working set')),
                           ElevatedButton(
                             onPressed: () => {
                               setState(() {
@@ -122,12 +124,17 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                           builder: (_) => AddSetBottomSheet(
                             reps: sets.values.toList()[index].reps,
                             weight: sets.values.toList()[index].weight,
+                            isWarmUp: sets.values.toList()[index].isWarmUp,
                           ),
                         );
+
+                        if (result == null) return;
+
                         setState(() {
                           sets[index] = ExerciseSet(
                             reps: result.reps,
                             weight: result.weight,
+                            isWarmUp: result.isWarmUp,
                           );
                         });
                       },
@@ -146,6 +153,7 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                     sets[sets.length] = ExerciseSet(
                       reps: result.reps,
                       weight: result.weight,
+                      isWarmUp: result.isWarmUp,
                     );
                   });
                 }, 
@@ -163,7 +171,8 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
 class AddSetBottomSheet extends StatefulWidget {
   final int reps;
   final double weight;
-  const AddSetBottomSheet({super.key, this.reps = 0, this.weight = 0.0});
+  final bool isWarmUp;
+  const AddSetBottomSheet({super.key, this.reps = 0, this.weight = 0.0, this.isWarmUp = false});
 
   @override
   State<AddSetBottomSheet> createState() => _AddSetBottomSheetState();
@@ -172,6 +181,7 @@ class AddSetBottomSheet extends StatefulWidget {
 class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
   late TextEditingController _repsController;
   late TextEditingController _weightController;
+  late bool _isWarmUpController = widget.isWarmUp;
 
   @override
   void dispose() {
@@ -220,6 +230,20 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
             ),
             const SizedBox(height: 16),
             Row(
+              children: [
+                Expanded(child: const Text('Is Warm-up Set'),),
+                Expanded(child: Checkbox(
+                  value: _isWarmUpController,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _isWarmUpController = value ?? false;
+                    });
+                  },
+                ),),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 ElevatedButton(
@@ -228,6 +252,7 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
                       ExerciseSet(
                         reps: int.parse(_repsController.text),
                         weight: double.parse(_weightController.text.replaceAll(',', '.')),
+                        isWarmUp: _isWarmUpController,
                       ),
                     );
                   },

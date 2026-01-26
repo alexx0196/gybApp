@@ -104,3 +104,31 @@ exports.deleteUnverifiedUsersTest = functions.https.onRequest(async (req, res) =
   console.log(`Deleted ${deletedCount} unverified users`);
   res.send(`Deleted ${deletedCount} unverified users`);
 });
+
+
+exports.migrateWarmUpFlag = functions.https.onRequest(async (req, res) => {
+  const workoutsRef = admin.firestore().collection("workouts");
+  const snapshot = await workoutsRef.get();
+
+  const batch = admin.firestore().batch();
+
+  snapshot.forEach(doc => {
+    let sets = doc.data().sets;
+    let updated = false;
+
+    sets = sets.map(s => {
+      if (s.isWarmUp === undefined) {
+        s.isWarmUp = false;
+        updated = true;
+      }
+      return s;
+    });
+
+    if (updated) {
+      batch.update(doc.ref, { sets: sets });
+    }
+  });
+
+  await batch.commit();
+  res.send("Migration completed");
+});
