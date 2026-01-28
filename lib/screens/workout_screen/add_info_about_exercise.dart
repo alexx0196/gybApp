@@ -182,6 +182,8 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
   late TextEditingController _repsController;
   late TextEditingController _weightController;
   late bool _isWarmUpController = widget.isWarmUp;
+  String? _repsErrorText;
+  String? _weightErrorText;
 
   @override
   void dispose() {
@@ -215,7 +217,15 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
                   child: TextField(
                     controller: _repsController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Reps'),
+                    decoration: InputDecoration(
+                      labelText: 'Reps',
+                      errorText: _repsErrorText,
+                    ),
+                    onChanged: (value) => {
+                      setState(() {
+                         _repsErrorText = null;
+                      })
+                    },
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -223,7 +233,15 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
                   child: TextField(
                     controller: _weightController,
                     keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(labelText: 'Weight'),
+                    decoration: InputDecoration(
+                      labelText: 'Weight',
+                      errorText: _weightErrorText,
+                    ),
+                    onChanged: (value) => {
+                      setState(() {
+                         _weightErrorText = null;
+                      })
+                    },
                   ),
                 ),
               ],
@@ -248,10 +266,38 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
               children: [
                 ElevatedButton(
                   onPressed: () {
+                    final reps = int.tryParse(_repsController.text.trim());
+                    if (reps == null) {
+                      setState(() {
+                        _repsErrorText = 'Please enter a valid number of reps';
+                      });
+                      return;
+                    }
+                    if (reps <= 0) {
+                      setState(() {
+                        _repsErrorText = 'Please enter a valid number of reps';
+                      });
+                      return;
+                    }
+
+                    final weight = double.tryParse(_weightController.text.trim());
+                    if (weight == null) {
+                      setState(() {
+                        _weightErrorText = 'Please enter a valid weight';
+                      });
+                      return;
+                    }
+                    if (weight < 0) {
+                      setState(() {
+                        _weightErrorText = 'Please enter a valid weight';
+                      });
+                      return;
+                    }
+
                     Navigator.of(context).pop(
                       ExerciseSet(
-                        reps: int.parse(_repsController.text),
-                        weight: double.parse(_weightController.text.replaceAll(',', '.')),
+                        reps: reps,
+                        weight: weight,
                         isWarmUp: _isWarmUpController,
                       ),
                     );
