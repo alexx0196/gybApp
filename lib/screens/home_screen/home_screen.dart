@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       } else {
                         Navigator.push(
                           context, 
-                          MaterialPageRoute(builder: (context) => WorkoutScreen(id: workouts[index].id))
+                          MaterialPageRoute(builder: (context) => WorkoutScreen(id: workouts[index].id, date: dateText),)
                         );
                       }
                     },
@@ -141,7 +141,7 @@ class _HomeScreenState extends State<HomeScreen> {
               } on WorkoutAlreadyExistsException catch (e) {
                 Navigator.push(
                   context, 
-                  MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
+                  MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id, date: DateFormat('dd.MM.yyyy').format(e.date)))
                 );
               }
             } else if (item == 'select_date') {
@@ -160,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 } on WorkoutAlreadyExistsException catch (e) {
                   Navigator.push(
                     context, 
-                    MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id))
+                    MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id, date: DateFormat('dd.MM.yyyy').format(e.date))),
                   );
                 }
               }

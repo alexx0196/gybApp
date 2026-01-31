@@ -204,7 +204,7 @@ class WorkoutsService {
     .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(startOfTomorrow)).limit(1).get();
     
     if (querySnapshot.docs.isNotEmpty) {
-      throw WorkoutAlreadyExistsException(querySnapshot.docs.first.id);
+      throw WorkoutAlreadyExistsException(querySnapshot.docs.first.id, startOfDay);
     }
 
     final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(); 
@@ -226,7 +226,7 @@ class WorkoutsService {
     .where('createdAt', isLessThanOrEqualTo: Timestamp.fromDate(startOfTomorrow)).limit(1).get();
 
     if (querySnapshot.docs.isNotEmpty) {
-      throw WorkoutAlreadyExistsException(querySnapshot.docs.first.id);
+      throw WorkoutAlreadyExistsException(querySnapshot.docs.first.id, startOfDay);
     } else {
       await docRef.set({
         'createdAt': Timestamp.fromDate(startOfDay),
@@ -261,8 +261,30 @@ class WorkoutsService {
     await workoutRef.delete();
   }
 
-  Stream<QuerySnapshot<Map<String, dynamic>>> getExercisesFromWorkout(String uid, String workoutId) {
-    final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').snapshots();
+  // эта штука тоже нада для миграции старых данных
+  Future<void> updateExerciseIndexIfItDoenstExist(String uid, String workoutId) async {
+    final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').get();
+    final batch = FirebaseFirestore.instance.batch();
+    for (final i in (await doc).docs) {
+      final data = i.data() as Map<String, dynamic>?;
+
+      // если поля нет, добавляем isWarmUp = true
+      if (data == null || data['exerciseIndex'] == null) {
+        batch.set(
+          i.reference, 
+          {'exerciseIndex': 0},
+          SetOptions(merge: true)
+        );
+      }
+    }
+    batch.commit();
+  }
+
+  Stream<QuerySnapshot<Map<String, dynamic>>> getExercisesFromWorkout(String uid, String workoutId){
+    updateExerciseIndexIfItDoenstExist(uid, workoutId);
+
+    final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').orderBy('exerciseIndex', descending: true).snapshots();
+
     return doc;
   }
 
@@ -308,9 +330,40 @@ class WorkoutsService {
     final docRef = exerciseId.isNotEmpty
       ? exerciseRef.doc(exerciseId)
       : exerciseRef.doc();
+
+    int finalIndex = 0;
+    if (exerciseId.isNotEmpty) {
+      final snapshot = await docRef.get();
+
+      if (snapshot.exists) {
+        finalIndex = snapshot.data()?['exerciseIndex'] as int? ?? 0;
+      }
+    }
+  
+    if (finalIndex == 0) {
+      // Получи все упражнения в этом workout
+      final exercisesSnapshot = await fireStore
+          .collection('users').doc(uid)
+          .collection('workouts').doc(workoutId)
+          .collection('exercises')
+          .get();
+      
+      // Найди максимальный индекс
+      int maxIndex = 0;
+      for (var doc in exercisesSnapshot.docs) {
+        final index = doc.data()['exerciseIndex'] as int? ?? 0;
+        if (index > maxIndex) {
+          maxIndex = index;
+        }
+      }
+      
+      // Новый индекс = maxIndex + 1
+      finalIndex = maxIndex + 1;
+    }
     
     docRef.set({
       'name': name,
+      'exerciseIndex': finalIndex,
     }, SetOptions(merge: true));
     
     final batch = FirebaseFirestore.instance.batch();
@@ -345,5 +398,6 @@ class WorkoutsService {
 
 class WorkoutAlreadyExistsException implements Exception {
   final String id;
-  WorkoutAlreadyExistsException(this.id);
+  final DateTime date;
+  WorkoutAlreadyExistsException(this.id, this.date);
 }

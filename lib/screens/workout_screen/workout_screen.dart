@@ -5,7 +5,8 @@ import 'package:gym_tracker/screens/workout_screen/add_info_about_exercise.dart'
 
 class WorkoutScreen extends StatefulWidget {
   final String id;
-  const WorkoutScreen({super.key, required this.id});
+  final String date;
+  const WorkoutScreen({super.key, required this.id, required this.date});
 
   @override
   State<WorkoutScreen> createState() => _WorkoutScreenState();
@@ -16,7 +17,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   CollectionService collectionService = CollectionService();
   final authService = sl.get<AuthService>();
 
-  void _chooseEcercise(String workoutId) async {
+  void _chooseEcercise() async {
     return await showDialog(
       context: context, 
       builder: (BuildContext context) {
@@ -49,7 +50,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           context, 
                           MaterialPageRoute(builder: (context) => AddInfoAboutExercise(
                             exerciseName: exerciseList[index], 
-                            workoutId: workoutId,
+                            workoutId: widget.id,
                           ),)
                         );
                       },
@@ -67,7 +68,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Your workout ${widget.id}')),
+      appBar: AppBar(title: Text('Your workout ${widget.date}')),
       body: Center(
         child: StreamBuilder(
           stream: workoutsService.getExercisesFromWorkout(authService.currentUser!.uid, widget.id), 
@@ -128,9 +129,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         )
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _chooseEcercise(widget.id);
-        },
+        onPressed: () => _chooseEcercise(),
         child: Icon(Icons.add),
       ),
     );
