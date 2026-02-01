@@ -205,19 +205,31 @@ class ChangeWeightDialog extends StatefulWidget {
 class _ChangeWeightDialogState extends State<ChangeWeightDialog> {
   AuthService authService = sl.get<AuthService>();
   AuthFireStoreService authFireStoreService = AuthFireStoreService();
+  final weightController = TextEditingController();
+  String? _weightErrorText;
+
+  @override
+  void dispose() {
+    weightController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final weightController = TextEditingController();
-
     return AlertDialog(
       title: const Text('Change Weight'),
       content: TextField(
         controller: weightController,
         keyboardType: TextInputType.number,
-        decoration: const InputDecoration(
+        decoration: InputDecoration(
           labelText: 'Enter new weight in kg',
+          errorText: _weightErrorText
         ),
+        onChanged: (value) {
+          setState(() {
+            _weightErrorText = null;
+          });
+        },
       ),
       actions: [
         TextButton(
@@ -226,11 +238,24 @@ class _ChangeWeightDialogState extends State<ChangeWeightDialog> {
         ),
         ElevatedButton(
           onPressed: () {
-            final newWeight = double.tryParse(weightController.text);
-            if (newWeight != null) {
-              authFireStoreService.addWeightEntry(authService.currentUser!.uid, newWeight);
-              Navigator.pop(context);
+            final newWeight = double.tryParse(weightController.text.replaceAll(',', '.').trim());
+
+            if (weightController.text.isEmpty) {
+              setState(() {
+                _weightErrorText = 'Weight cannot be empty';
+              });
+              return;
             }
+
+            if (newWeight == null || newWeight <= 0) {
+              setState(() {
+                _weightErrorText = 'Please enter a valid number';
+              });
+              return;
+            }
+
+            authFireStoreService.addWeightEntry(authService.currentUser!.uid, newWeight);
+            Navigator.pop(context);
           }, 
           child: const Text('Save')
         ),

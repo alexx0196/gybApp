@@ -137,7 +137,11 @@ class _HomeScreenState extends State<HomeScreen> {
           onSelected: (item) async {
             if (item == 'add_workout') {
               try {
-                await workoutsService.addWorkout(authService.currentUser!.uid);
+                String workoutId = await workoutsService.addWorkout(authService.currentUser!.uid);
+                Navigator.push(
+                  context, 
+                  MaterialPageRoute(builder: (context) => WorkoutScreen(id: workoutId, date: DateFormat('dd.MM.yyyy').format(DateTime.now())))
+                );
               } on WorkoutAlreadyExistsException catch (e) {
                 Navigator.push(
                   context, 

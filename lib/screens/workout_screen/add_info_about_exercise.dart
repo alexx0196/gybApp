@@ -280,14 +280,15 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
                       return;
                     }
 
-                    final weight = double.tryParse(_weightController.text.trim());
-                    if (weight == null) {
+                    final weight = _weightController.text.replaceAll(',', '.');
+                    final weightDouble = double.tryParse(weight.trim());
+                    if (weightDouble == null) {
                       setState(() {
                         _weightErrorText = 'Please enter a valid weight';
                       });
                       return;
                     }
-                    if (weight < 0) {
+                    if (weightDouble < 0) {
                       setState(() {
                         _weightErrorText = 'Please enter a valid weight';
                       });
@@ -297,7 +298,7 @@ class _AddSetBottomSheetState extends State<AddSetBottomSheet> {
                     Navigator.of(context).pop(
                       ExerciseSet(
                         reps: reps,
-                        weight: weight,
+                        weight: weightDouble,
                         isWarmUp: _isWarmUpController,
                       ),
                     );

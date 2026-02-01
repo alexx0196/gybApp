@@ -262,26 +262,26 @@ class WorkoutsService {
   }
 
   // эта штука тоже нада для миграции старых данных
-  Future<void> updateExerciseIndexIfItDoenstExist(String uid, String workoutId) async {
-    final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').get();
-    final batch = FirebaseFirestore.instance.batch();
-    for (final i in (await doc).docs) {
-      final data = i.data() as Map<String, dynamic>?;
+  // Future<void> updateExerciseIndexIfItDoenstExist(String uid, String workoutId) async {
+  //   final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').get();
+  //   final batch = FirebaseFirestore.instance.batch();
+  //   for (final i in (await doc).docs) {
+  //     final data = i.data() as Map<String, dynamic>?;
 
-      // если поля нет, добавляем isWarmUp = true
-      if (data == null || data['exerciseIndex'] == null) {
-        batch.set(
-          i.reference, 
-          {'exerciseIndex': 0},
-          SetOptions(merge: true)
-        );
-      }
-    }
-    batch.commit();
-  }
+  //     // если поля нет, добавляем isWarmUp = true
+  //     if (data == null || data['exerciseIndex'] == null) {
+  //       batch.set(
+  //         i.reference, 
+  //         {'exerciseIndex': 0},
+  //         SetOptions(merge: true)
+  //       );
+  //     }
+  //   }
+  //   batch.commit();
+  // }
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getExercisesFromWorkout(String uid, String workoutId){
-    updateExerciseIndexIfItDoenstExist(uid, workoutId);
+    // updateExerciseIndexIfItDoenstExist(uid, workoutId); // вызываем миграцию старых данных
 
     final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').orderBy('exerciseIndex', descending: true).snapshots();
 
@@ -294,20 +294,20 @@ class WorkoutsService {
 
     // это нужно, если isWarmUp(отвечает за разминку) может отсутствовать в старых записях
     // очень важно это потом удалить, когда все данные будут с этим полем!!!
-    final batch = FirebaseFirestore.instance.batch();
-    for (final i in snapshot.docs) {
-      final data = i.data() as Map<String, dynamic>?;
+    // final batch = FirebaseFirestore.instance.batch();
+    // for (final i in snapshot.docs) {
+    //   final data = i.data() as Map<String, dynamic>?;
 
-      // если поля нет, добавляем isWarmUp = true
-      if (data == null || !data.containsKey('isWarmUp')) {
-        batch.set(
-          i.reference, 
-          {'isWarmUp': false},
-          SetOptions(merge: true)
-        );
-      }
-    }
-    batch.commit();
+    //   // если поля нет, добавляем isWarmUp = true
+    //   if (data == null || !data.containsKey('isWarmUp')) {
+    //     batch.set(
+    //       i.reference, 
+    //       {'isWarmUp': false},
+    //       SetOptions(merge: true)
+    //     );
+    //   }
+    // }
+    // batch.commit();
 
     final Map<int, ExerciseSet> sets = {};
 
