@@ -30,7 +30,7 @@ class AddInfoAboutExercise extends StatefulWidget {
 
 
 class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
-  WorkoutsService workoutsService = WorkoutsService();
+  ExerciseService exerciseService = ExerciseService();
   AuthService authService = AuthService();
 
   Map<int, ExerciseSet> sets = {};
@@ -45,7 +45,7 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
   }
 
   Future<void> _loadSets() async {
-    final loadedSets = await workoutsService.getCertainExercise(
+    final loadedSets = await exerciseService.getCertainExercise(
       authService.currentUser!.uid,
       widget.workoutId,
       widget.exerciseId,
@@ -66,7 +66,7 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
             icon: const Icon(Icons.save),
             onPressed: () {
               // Save the exercise info along with sets
-              workoutsService.addExerciseAndInfo(
+              exerciseService.addExerciseAndInfo(
                 authService.currentUser!.uid,
                 widget.workoutId,
                 widget.exerciseId,

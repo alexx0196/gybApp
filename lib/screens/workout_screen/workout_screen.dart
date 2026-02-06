@@ -13,7 +13,7 @@ class WorkoutScreen extends StatefulWidget {
 }
 
 class _WorkoutScreenState extends State<WorkoutScreen> {
-  WorkoutsService workoutsService = WorkoutsService();
+  ExerciseService exerciseService = ExerciseService();
   CollectionService collectionService = CollectionService();
   final authService = sl.get<AuthService>();
 
@@ -71,7 +71,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
       appBar: AppBar(title: Text('Your workout ${widget.date}')),
       body: Center(
         child: StreamBuilder(
-          stream: workoutsService.getExercisesFromWorkout(authService.currentUser!.uid, widget.id), 
+          stream: exerciseService.getExercisesFromWorkout(authService.currentUser!.uid, widget.id), 
           builder: (context, snapshot) {
             if (snapshot.connectionState == ConnectionState.waiting) {
               return CircularProgressIndicator();
@@ -110,7 +110,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                           );
                         },
                         onLongPress: () {
-                          workoutsService.deleteExerciseFromWorkout(
+                          exerciseService.deleteExerciseFromWorkout(
                             authService.currentUser!.uid,
                             widget.id,
                             exercises[index].id,

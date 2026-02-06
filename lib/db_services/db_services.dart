@@ -173,21 +173,6 @@ class CollectionService {
     // SetOptions(merge: true); // нужно чтобы обновить документ, не создавая новый
     return docRef.id;
   }
-
-  // Future<void> addExercice(String uid, String workout, String name, ) async {
-  //   DocumentReference<Map<String, dynamic>> docRef = fireStore.collection('users').doc(uid).collection('catalogs').doc(catalogId);
-  //   DocumentSnapshot<Map<String, dynamic>> snapshot = await docRef.get();
-  //   if (snapshot.exists) {
-  //     Map<String, dynamic> existingData = snapshot.data()!;
-  //     Map<String, dynamic> existingWords = existingData['words'] ?? {};
-
-  //     existingWords.addAll(words);
-  //     await docRef.update({'words': existingWords});
-  //   }
-  //   else {
-  //     await docRef.set({'words': words});
-  //   }
-  // }
 }
 
 
@@ -260,29 +245,13 @@ class WorkoutsService {
 
     await workoutRef.delete();
   }
+}
 
-  // эта штука тоже нада для миграции старых данных
-  // Future<void> updateExerciseIndexIfItDoenstExist(String uid, String workoutId) async {
-  //   final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').get();
-  //   final batch = FirebaseFirestore.instance.batch();
-  //   for (final i in (await doc).docs) {
-  //     final data = i.data() as Map<String, dynamic>?;
 
-  //     // если поля нет, добавляем isWarmUp = true
-  //     if (data == null || data['exerciseIndex'] == null) {
-  //       batch.set(
-  //         i.reference, 
-  //         {'exerciseIndex': 0},
-  //         SetOptions(merge: true)
-  //       );
-  //     }
-  //   }
-  //   batch.commit();
-  // }
+class ExerciseService {
+  final fireStore = FirebaseFirestore.instance;
 
   Stream<QuerySnapshot<Map<String, dynamic>>> getExercisesFromWorkout(String uid, String workoutId){
-    // updateExerciseIndexIfItDoenstExist(uid, workoutId); // вызываем миграцию старых данных
-
     final doc = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').orderBy('exerciseIndex', descending: true).snapshots();
 
     return doc;
@@ -291,23 +260,6 @@ class WorkoutsService {
   Future<Map<int, ExerciseSet>> getCertainExercise(String uid, String workoutId, String exerciseId) async {
     final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises')
                 .doc(exerciseId).collection('sets').orderBy(FieldPath.documentId).get();
-
-    // это нужно, если isWarmUp(отвечает за разминку) может отсутствовать в старых записях
-    // очень важно это потом удалить, когда все данные будут с этим полем!!!
-    // final batch = FirebaseFirestore.instance.batch();
-    // for (final i in snapshot.docs) {
-    //   final data = i.data() as Map<String, dynamic>?;
-
-    //   // если поля нет, добавляем isWarmUp = true
-    //   if (data == null || !data.containsKey('isWarmUp')) {
-    //     batch.set(
-    //       i.reference, 
-    //       {'isWarmUp': false},
-    //       SetOptions(merge: true)
-    //     );
-    //   }
-    // }
-    // batch.commit();
 
     final Map<int, ExerciseSet> sets = {};
 
@@ -392,6 +344,133 @@ class WorkoutsService {
     }
 
     await exerciseRef.delete();
+  }
+}
+
+
+class StatisticService {
+  final fireStore = FirebaseFirestore.instance;
+
+  Future<List<String>> getAllExercises(String uid) async {
+    final doc = await fireStore.collection('users').doc(uid).get();
+    final data = doc.data();
+    final List<dynamic> raw = data?['exercises'] ?? [];
+    return raw.cast<String>();
+  }
+
+  Future<List<DateTime>> getWorkoutDates(String uid) async {
+    final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').orderBy('createdAt').get();
+
+    List<DateTime> workoutDates = [];
+
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final timestamp = data['createdAt'] as Timestamp?;
+      if (timestamp != null) {
+        workoutDates.add(timestamp.toDate());
+      }
+    }
+
+    return workoutDates;
+  }
+
+  Future<Map<String, dynamic>> getStatisticsForExercise(String uid, String exerciseName) async {
+    final snapshot = await fireStore
+      .collection('users')
+      .doc(uid)
+      .collection('statistics')
+      .doc(exerciseName)
+      .collection('history')
+      .get();
+    
+    Map<int, List> stats = {};
+    double maxWeight = 0.0;
+    double totalVolume = 0.0;
+    int workoutCount = snapshot.docs.length;
+    for (final doc in snapshot.docs) {
+      final data = doc.data();
+      final maxWeightFromDoc = data['maxWeight'] as double? ?? 0.0;
+      final totalVolumeFromDoc = data['totalVolume'] as double? ?? 0.0;
+
+      final date = DateTime.parse(doc.id);
+      stats[date.millisecondsSinceEpoch] = [maxWeightFromDoc, totalVolumeFromDoc];
+
+      if (maxWeightFromDoc > maxWeight) {
+        maxWeight = maxWeightFromDoc;
+      }
+      totalVolume += totalVolumeFromDoc;
+    }
+
+    final entries = stats.entries.toList();
+    entries.sort((a, b) => a.key.compareTo(b.key));
+    final dates = entries.map((e) => DateTime.fromMillisecondsSinceEpoch(e.key)).toList();
+    final maxWeights = entries.map((e) => e.value[0]).toList();
+    final volumes = entries.map((e) => e.value[1]).toList();
+
+    return {
+      'maxWeight': maxWeight,
+      'volume': totalVolume,
+      'workoutCount': workoutCount,
+      'detailedStats': {
+        'dates': dates,
+        'maxWeights': maxWeights,
+        'volumes': volumes,
+      },
+    };
+  }
+
+
+
+  Future<void> migrationForStats(String uid) async {
+    List<String> exercisesList = [];
+    await fireStore.collection('users').doc(uid).get().then((doc) {
+      final data = doc.data();
+      final List<dynamic> raw = data?['exercises'] ?? [];
+      exercisesList = raw.cast<String>();
+    });
+    print('exercisesList: $exercisesList');
+
+    final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').get();
+
+    for (final workoutDoc in snapshot.docs) {
+      final exercisesSnapshot = await workoutDoc.reference.collection('exercises').get();
+
+      for (final exerciseDoc in exercisesSnapshot.docs) {
+        double maxWeight = 0.0;
+        double totalVolume = 0.0;
+        int totalReps = 0;
+
+        final setsSnapshot = await exerciseDoc.reference.collection('sets').get();
+
+        for (final setDoc in setsSnapshot.docs) {
+          final data = setDoc.data();
+          final weight = (data['weight'] as num?)?.toDouble() ?? 0.0;
+          final reps = data['reps'] as int? ?? 0;
+
+          if (weight > maxWeight) {
+            maxWeight = weight;
+          }
+
+          totalVolume += weight * reps;
+          totalReps += reps;
+        }
+
+        final docRef = fireStore
+          .collection('users')
+          .doc(uid)
+          .collection('statistics')
+          .doc(exerciseDoc.data()['name'])
+          .collection('history')
+          .doc(workoutDoc['createdAt'].toDate().toIso8601String());
+        await docRef.set({
+          'maxWeight': maxWeight,
+          'totalVolume': totalVolume,
+          'totalReps': totalReps,
+        });
+        print('sss');
+      }
+    }
+    
   }
 }
 
