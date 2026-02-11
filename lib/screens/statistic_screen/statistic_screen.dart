@@ -20,6 +20,7 @@ class _StatisticScreenState extends State<StatisticScreen> {
   double? _maxWeight;
   double? _volume;
   int? _workoutCount;
+  String? _graphType;
   Map<String, List<dynamic>>? _stats;
   bool _isLoading = false;
 
@@ -50,7 +51,8 @@ class _StatisticScreenState extends State<StatisticScreen> {
       ),
       body: Column(
         children: [
-          Expanded(
+          Padding(
+            padding: EdgeInsets.all(10.0), 
             child: Row(
               children: [
                 const Text('Упражнение'),
@@ -60,30 +62,74 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     if (snapshot.hasData) {
                       final exercises = snapshot.data!;
                       return DropdownMenu(
-                        dropdownMenuEntries: exercises.map((e) => DropdownMenuEntry(value: e, label: e)).toList(),
+                        requestFocusOnTap: false,
+                        dropdownMenuEntries: exercises.map((exercise) => DropdownMenuEntry(value: exercise, label: exercise)).toList(), 
                         onSelected: (value) {
                           setState(() {
                             _choosedExercise = value;
-                            _loadStatistics();
                           });
+                          _loadStatistics();
                         },
                       );
                     }
                     return const CircularProgressIndicator();
                   }
                 ),
+                Expanded(child: SizedBox()),
+                const Text('Выберите тип графика'),
+                const SizedBox(width: 20,),
+                DropdownMenu(
+                  requestFocusOnTap: false,
+                  dropdownMenuEntries: [
+                    const DropdownMenuEntry(value: 'weight', label: 'Макс вес'),
+                    const DropdownMenuEntry(value: 'avgWeight', label: 'Средний вес за тренировку'),
+                    const DropdownMenuEntry(value: 'volume', label: 'Объем'),
+                  ], 
+                  onSelected: (value) {
+                    setState(() {
+                      _graphType = value;
+                      if (value == 'weight') {
+                        _graphType = 'weight';
+                      } else if (value == 'avgWeight') {
+                        _graphType = 'avgWeight';
+                      } else if (value == 'volume') {
+                        _graphType = 'volume';
+                      }
+                    });
+                  },
+                )
               ],
-            )
+            ),
           ),
           SizedBox(height: 20,),
-          Text(_isLoading ? 'Загрузка...' : 'Максимальный вес: ${_maxWeight ?? 0}'),
+          Row(
+            children: [
+              Expanded(
+                child: StatCard(
+                  title: 'Макс вес',
+                  value: _isLoading ? 'Загрузка...' : '${_maxWeight ?? 0}',
+                  unit: 'kg',
+                ),
+              ),
+              SizedBox(width: 16,),
+              Expanded(
+                child: StatCard(
+                  title: 'Объем',
+                  value: _isLoading ? 'Загрузка...' : '${_volume ?? 0}',
+                  unit: 'kg',
+                ),
+              ),
+              SizedBox(width: 16,),
+              Expanded(
+                child: StatCard(
+                  title: 'Кол-во тренировок',
+                  value: _isLoading ? 'Загрузка...' : '${_workoutCount ?? 0}',
+                ),
+              ),
+            ],
+          ),
           SizedBox(height: 20,),
-          Text(_isLoading ? 'Загрузка...' : 'Объем: ${_volume ?? 0}'),
-          SizedBox(height: 20,),
-          Text(_isLoading ? 'Загрузка...' : 'Количество тренировок: ${_workoutCount ?? 0}'),
-          SizedBox(height: 20,),
-          StatsGraph(stats: _stats ?? {}),
-          SizedBox(height: 20,),
+          StatsGraph(stats: _stats ?? {}, graphType: _graphType,),
         ],
       ),
     drawer: AppDrawer(),
@@ -94,8 +140,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
 
 class StatsGraph extends StatefulWidget {
   final Map<String, List<dynamic>> stats;
+  final String? graphType;
 
-  const StatsGraph({super.key, this.stats = const {}});
+  const StatsGraph({super.key, this.stats = const {}, this.graphType});
 
   @override
   State<StatsGraph> createState() => _StatsGraphState();
@@ -107,9 +154,51 @@ class _StatsGraphState extends State<StatsGraph> {
     final dates = widget.stats['dates'] ?? [];
     final maxWeights = widget.stats['maxWeights'];
     final volumes = widget.stats['volumes'];
-    // print(dates);
-    // print(maxWeights);
-    // print(volumes);
+    final avgWeights = widget.stats['avgWeights'];
+    print(dates);
+    print(maxWeights);
+    print(volumes);
+    print(widget.graphType);
+
+    final List<CartesianSeries<dynamic, dynamic>> series = [];
+
+    if (widget.graphType == 'weight') {
+      series.add(LineSeries<Map<String, dynamic>, DateTime>(
+        dataSource: dates.asMap().entries.map((entry) => {
+          'date': entry.value,
+          'value': maxWeights != null && entry.key < maxWeights.length ? maxWeights[entry.key] : 0,
+        }).toList(),
+        xValueMapper: (Map<String, dynamic> data, _) => data['date'],
+        yValueMapper: (Map<String, dynamic> data, _) => data['value'],
+        name: 'Макс вес',
+        dataLabelSettings: DataLabelSettings(isVisible: true),
+        markerSettings: const MarkerSettings(isVisible: true),
+      ));
+    } else if (widget.graphType == 'volume') {
+      series.add(LineSeries<Map<String, dynamic>, DateTime>(
+        dataSource: dates.asMap().entries.map((entry) => {
+          'date': entry.value,
+          'value': volumes != null && entry.key < volumes.length ? volumes[entry.key] : 0,
+        }).toList(),
+        xValueMapper: (Map<String, dynamic> data, _) => data['date'],
+        yValueMapper: (Map<String, dynamic> data, _) => data['value'],
+        name: 'Объем',
+        dataLabelSettings: DataLabelSettings(isVisible: true),
+        markerSettings: const MarkerSettings(isVisible: true),
+      ));
+    } else if (widget.graphType == 'avgWeight') {
+      series.add(LineSeries<Map<String, dynamic>, DateTime>(
+        dataSource: dates.asMap().entries.map((entry) => {
+          'date': entry.value,
+          'value': avgWeights != null && entry.key < avgWeights.length ? avgWeights[entry.key] : 0,
+        }).toList(),
+        xValueMapper: (Map<String, dynamic> data, _) => data['date'],
+        yValueMapper: (Map<String, dynamic> data, _) => data['value'],
+        name: 'Средний вес',
+        dataLabelSettings: DataLabelSettings(isVisible: true),
+        markerSettings: const MarkerSettings(isVisible: true),
+      ));
+    }
 
     final List<Map<String, dynamic>> data = [];
     for (int i = 0; i < dates.length; i++) {
@@ -139,24 +228,76 @@ class _StatsGraphState extends State<StatsGraph> {
       title: ChartTitle(text: 'Weight History'),
       legend: Legend(isVisible: false),
       tooltipBehavior: TooltipBehavior(enable: true),
-      series: <LineSeries>[
-        LineSeries<Map<String, dynamic>, DateTime>(
-          dataSource: data,
-          xValueMapper: (Map<String, dynamic> data, _) => data['date'],
-          yValueMapper: (Map<String, dynamic> data, _) => data['weight'],
-          name: 'Weight',
-          dataLabelSettings: DataLabelSettings(isVisible: true),
-          markerSettings: const MarkerSettings(isVisible: true),
-        ),
-        LineSeries<Map<String, dynamic>, DateTime>(
-          dataSource: data,
-          xValueMapper: (Map<String, dynamic> data, _) => data['date'],
-          yValueMapper: (Map<String, dynamic> data, _) => data['volume'],
-          name: 'Volume',
-          dataLabelSettings: DataLabelSettings(isVisible: true),
-          markerSettings: const MarkerSettings(isVisible: true),
-        )
-      ]
+      series: series,
+    );
+  }
+}
+
+
+class StatCard extends StatelessWidget {
+  final String title;
+  final String value;
+  final String unit;
+
+  const StatCard({
+    super.key,
+    required this.title,
+    required this.value,
+    this.unit = '',
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Text(
+              title,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
+                  ),
+            ),
+          ),
+
+          const Divider(height: 1),
+
+          // Body (value)
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: RichText(
+                text: TextSpan(
+                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                  children: [
+                    TextSpan(text: value),
+                    if (unit.isNotEmpty)
+                      TextSpan(
+                        text: ' $unit',
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

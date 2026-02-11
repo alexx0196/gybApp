@@ -73,6 +73,12 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                 widget.exerciseName,
                 sets,
               );
+              exerciseService.addToStatistics(
+                authService.currentUser!.uid, 
+                widget.exerciseName, 
+                widget.exerciseId,
+                sets,
+              );
               Navigator.pop(context);
             },
           ),

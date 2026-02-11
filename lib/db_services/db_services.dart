@@ -335,6 +335,54 @@ class ExerciseService {
     return docRef.id;
   }
 
+  Future<void> addToStatistics(String uid, String exerciseName, String exerciseId, Map<int, ExerciseSet> sets) async {
+    final CollectionReference historyRef = fireStore
+    .collection('users')
+    .doc(uid)
+    .collection('statistics')
+    .doc(exerciseName)
+    .collection('history');
+
+    String date;
+    DocumentReference docRef;
+
+    if (exerciseId.isEmpty) {
+      docRef = historyRef.doc();
+      date = DateTime.now().toIso8601String();
+    } else {
+      docRef = historyRef.doc(exerciseId);
+      final doc = await docRef.get();
+      if (doc.exists && doc.data() != null) {
+        final data = doc.data() as Map<String, dynamic>;
+        date = data['date'] as String? ?? DateTime.now().toIso8601String();
+      } else {
+        date = DateTime.now().toIso8601String();
+      }
+    }
+    
+    double maxWeight = 0.0;
+    double totalVolume = 0.0;
+    double avgWeight = 0.0;
+    int repsWorkSetCount = 0;
+
+    sets.forEach((key, value) {
+      if (value.weight > maxWeight) {
+        maxWeight = value.weight;
+      }
+      if (value.isWarmUp == false) {
+        avgWeight += value.weight;
+        repsWorkSetCount += value.reps;
+      }
+      totalVolume += value.weight * value.reps;
+    });
+    await docRef.set({
+      'date': date,
+      'maxWeight': maxWeight,
+      'totalVolume': totalVolume,
+      'avgWeight': repsWorkSetCount > 0 ? avgWeight / repsWorkSetCount : 0.0,
+    }, SetOptions(merge: true));
+  }
+
   Future<void> deleteExerciseFromWorkout(String uid, String workoutId, String exerciseId) async {
     final exerciseRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').doc(exerciseId);
     
@@ -389,11 +437,12 @@ class StatisticService {
     int workoutCount = snapshot.docs.length;
     for (final doc in snapshot.docs) {
       final data = doc.data();
+      final dateFromDoc = DateTime.parse(data['date']);
       final maxWeightFromDoc = data['maxWeight'] as double? ?? 0.0;
       final totalVolumeFromDoc = data['totalVolume'] as double? ?? 0.0;
+      final avgWeightFromDoc = data['avgWeight'] as double? ?? 0.0;
 
-      final date = DateTime.parse(doc.id);
-      stats[date.millisecondsSinceEpoch] = [maxWeightFromDoc, totalVolumeFromDoc];
+      stats[dateFromDoc.millisecondsSinceEpoch] = [maxWeightFromDoc, totalVolumeFromDoc, avgWeightFromDoc];
 
       if (maxWeightFromDoc > maxWeight) {
         maxWeight = maxWeightFromDoc;
@@ -406,6 +455,7 @@ class StatisticService {
     final dates = entries.map((e) => DateTime.fromMillisecondsSinceEpoch(e.key)).toList();
     final maxWeights = entries.map((e) => e.value[0]).toList();
     final volumes = entries.map((e) => e.value[1]).toList();
+    final avgWeights = entries.map((e) => e.value[2]).toList();
 
     return {
       'maxWeight': maxWeight,
@@ -415,11 +465,10 @@ class StatisticService {
         'dates': dates,
         'maxWeights': maxWeights,
         'volumes': volumes,
+        'avgWeights': avgWeights,
       },
     };
   }
-
-
 
   Future<void> migrationForStats(String uid) async {
     List<String> exercisesList = [];
@@ -433,12 +482,14 @@ class StatisticService {
     final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').get();
 
     for (final workoutDoc in snapshot.docs) {
-      final exercisesSnapshot = await workoutDoc.reference.collection('exercises').get();
+      final exercisesSnapshot = await workoutDoc.reference.collection('exercises').get(); // получаем все упражнения в воркауте
 
       for (final exerciseDoc in exercisesSnapshot.docs) {
         double maxWeight = 0.0;
         double totalVolume = 0.0;
         int totalReps = 0;
+        double avgWeight = 0;
+        int repsWorkSetCount = 0;
 
         final setsSnapshot = await exerciseDoc.reference.collection('sets').get();
 
@@ -453,6 +504,12 @@ class StatisticService {
 
           totalVolume += weight * reps;
           totalReps += reps;
+
+          if (data['isWarmUp'] == false) {
+            print(weight);
+            avgWeight += weight;
+            repsWorkSetCount += reps;
+          }
         }
 
         final docRef = fireStore
@@ -461,11 +518,13 @@ class StatisticService {
           .collection('statistics')
           .doc(exerciseDoc.data()['name'])
           .collection('history')
-          .doc(workoutDoc['createdAt'].toDate().toIso8601String());
+          .doc(exerciseDoc.id);
         await docRef.set({
+          'date': workoutDoc['createdAt'].toDate().toIso8601String(), 
           'maxWeight': maxWeight,
           'totalVolume': totalVolume,
           'totalReps': totalReps,
+          'avgWeight': totalReps > 0 ? avgWeight / repsWorkSetCount : 0.0,
         });
         print('sss');
       }
