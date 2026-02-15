@@ -54,9 +54,10 @@ class _StatisticScreenState extends State<StatisticScreen> {
           Padding(
             padding: EdgeInsets.all(10.0), 
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Text('Упражнение'),
-                const SizedBox(width: 20,),
+                const SizedBox(width: 10,),
                 FutureBuilder(
                   future: statisticService.getAllExercises(authService.currentUser!.uid), builder: (context, snapshot) {
                     if (snapshot.hasData) {
@@ -75,9 +76,17 @@ class _StatisticScreenState extends State<StatisticScreen> {
                     return const CircularProgressIndicator();
                   }
                 ),
-                Expanded(child: SizedBox()),
-                const Text('Выберите тип графика'),
-                const SizedBox(width: 20,),
+              ],
+            ),
+          ),
+          SizedBox(height: 14,),
+          Padding(
+            padding: EdgeInsets.all(10.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Тип графика'),
+                const SizedBox(width: 10,),
                 DropdownMenu(
                   requestFocusOnTap: false,
                   dropdownMenuEntries: [
@@ -129,7 +138,9 @@ class _StatisticScreenState extends State<StatisticScreen> {
             ],
           ),
           SizedBox(height: 20,),
-          StatsGraph(stats: _stats ?? {}, graphType: _graphType,),
+          Expanded(
+            child: StatsGraph(stats: _stats ?? {}, graphType: _graphType,),
+          ),
         ],
       ),
     drawer: AppDrawer(),
@@ -155,10 +166,10 @@ class _StatsGraphState extends State<StatsGraph> {
     final maxWeights = widget.stats['maxWeights'];
     final volumes = widget.stats['volumes'];
     final avgWeights = widget.stats['avgWeights'];
-    print(dates);
-    print(maxWeights);
-    print(volumes);
-    print(widget.graphType);
+    // print(dates);
+    // print(maxWeights);
+    // print(volumes);
+    // print(widget.graphType);
 
     final List<CartesianSeries<dynamic, dynamic>> series = [];
 
@@ -280,6 +291,7 @@ class StatCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Colors.black,
+                    fontSize: 22,
                   ),
                   children: [
                     TextSpan(text: value),

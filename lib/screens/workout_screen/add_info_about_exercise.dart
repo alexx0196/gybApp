@@ -64,9 +64,9 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
-            onPressed: () {
+            onPressed: () async {
               // Save the exercise info along with sets
-              exerciseService.addExerciseAndInfo(
+              String exerciseId = await exerciseService.addExerciseAndInfo(
                 authService.currentUser!.uid,
                 widget.workoutId,
                 widget.exerciseId,
@@ -76,7 +76,8 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
               exerciseService.addToStatistics(
                 authService.currentUser!.uid, 
                 widget.exerciseName, 
-                widget.exerciseId,
+                widget.workoutId,
+                exerciseId,
                 sets,
               );
               Navigator.pop(context);

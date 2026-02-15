@@ -194,7 +194,7 @@ class WorkoutsService {
 
     final docRef = fireStore.collection('users').doc(uid).collection('workouts').doc(); 
     await docRef.set({
-      'createdAt': FieldValue.serverTimestamp(),
+      'createdAt': Timestamp.fromDate(startOfDay),
     });
     // SetOptions(merge: true); // нужно чтобы обновить документ, не создавая новый
     return docRef.id;
@@ -240,6 +240,12 @@ class WorkoutsService {
       for (final setDoc in setsSnapshot.docs) {
         await setDoc.reference.delete();
       }
+
+      String exerciseName = exerciseDoc.data()['name'] as String? ?? '';
+      // delete from statistics as well
+      final statsRef = fireStore.collection('users').doc(uid).collection('statistics').doc(exerciseName).collection('history').doc(exerciseDoc.id);
+      await statsRef.delete();
+
       await exerciseDoc.reference.delete();
     }
 
@@ -335,7 +341,7 @@ class ExerciseService {
     return docRef.id;
   }
 
-  Future<void> addToStatistics(String uid, String exerciseName, String exerciseId, Map<int, ExerciseSet> sets) async {
+  Future<void> addToStatistics(String uid, String exerciseName, String workoutId, String exerciseId, Map<int, ExerciseSet> sets) async {
     final CollectionReference historyRef = fireStore
     .collection('users')
     .doc(uid)
@@ -343,22 +349,24 @@ class ExerciseService {
     .doc(exerciseName)
     .collection('history');
 
-    String date;
-    DocumentReference docRef;
+    Timestamp? date;
+    DocumentReference docRef = historyRef.doc(exerciseId);
+    final snapshot = await docRef.get();
 
-    if (exerciseId.isEmpty) {
-      docRef = historyRef.doc();
-      date = DateTime.now().toIso8601String();
+    if (snapshot.exists && snapshot.data() != null) {
+      final data = snapshot.data() as Map<String, dynamic>;
+      date = data['date'];
+      print(date);
     } else {
-      docRef = historyRef.doc(exerciseId);
-      final doc = await docRef.get();
-      if (doc.exists && doc.data() != null) {
-        final data = doc.data() as Map<String, dynamic>;
-        date = data['date'] as String? ?? DateTime.now().toIso8601String();
+      // тут мне надо получить дату воркаута, к которому относится упражнение, а не текущую дату, так как пользователь может добавлять упражнение в статистику задним числом
+      final workoutSnapshot = await fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).get();
+      if (workoutSnapshot.exists) {
+        final data = workoutSnapshot.data();
+        date = data?['createdAt'] as Timestamp? ?? Timestamp.now();
       } else {
-        date = DateTime.now().toIso8601String();
+        date = Timestamp.now();
       }
-    }
+    }    
     
     double maxWeight = 0.0;
     double totalVolume = 0.0;
@@ -385,6 +393,11 @@ class ExerciseService {
 
   Future<void> deleteExerciseFromWorkout(String uid, String workoutId, String exerciseId) async {
     final exerciseRef = fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).collection('exercises').doc(exerciseId);
+
+    String exerciseName = await exerciseRef.get().then((doc) {
+      final data = doc.data();
+      return data?['name'] as String? ?? '';
+    }); // Получаем имя упражнения, чтобы удалить его статистику
     
     final setsSnapshot = await exerciseRef.collection('sets').get();
     for (final doc in setsSnapshot.docs) {
@@ -392,6 +405,12 @@ class ExerciseService {
     }
 
     await exerciseRef.delete();
+
+    // delete from statistics as well
+    if (exerciseName.isNotEmpty) {
+      final statsRef = fireStore.collection('users').doc(uid).collection('statistics').doc(exerciseName).collection('history').doc(exerciseId);
+      await statsRef.delete();
+    }
   }
 }
 
@@ -437,7 +456,7 @@ class StatisticService {
     int workoutCount = snapshot.docs.length;
     for (final doc in snapshot.docs) {
       final data = doc.data();
-      final dateFromDoc = DateTime.parse(data['date']);
+      final dateFromDoc = data['date'].toDate() as DateTime? ?? DateTime.now();
       final maxWeightFromDoc = data['maxWeight'] as double? ?? 0.0;
       final totalVolumeFromDoc = data['totalVolume'] as double? ?? 0.0;
       final avgWeightFromDoc = data['avgWeight'] as double? ?? 0.0;
@@ -512,6 +531,8 @@ class StatisticService {
           }
         }
 
+        print(workoutDoc['createdAt'].runtimeType);
+
         final docRef = fireStore
           .collection('users')
           .doc(uid)
@@ -520,7 +541,7 @@ class StatisticService {
           .collection('history')
           .doc(exerciseDoc.id);
         await docRef.set({
-          'date': workoutDoc['createdAt'].toDate().toIso8601String(), 
+          'date': workoutDoc['createdAt'], 
           'maxWeight': maxWeight,
           'totalVolume': totalVolume,
           'totalReps': totalReps,
