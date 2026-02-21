@@ -356,7 +356,6 @@ class ExerciseService {
     if (snapshot.exists && snapshot.data() != null) {
       final data = snapshot.data() as Map<String, dynamic>;
       date = data['date'];
-      print(date);
     } else {
       // тут мне надо получить дату воркаута, к которому относится упражнение, а не текущую дату, так как пользователь может добавлять упражнение в статистику задним числом
       final workoutSnapshot = await fireStore.collection('users').doc(uid).collection('workouts').doc(workoutId).get();

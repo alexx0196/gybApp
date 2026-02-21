@@ -80,6 +80,8 @@ class _AddInfoAboutExerciseState extends State<AddInfoAboutExercise> {
                 exerciseId,
                 sets,
               );
+
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
           ),

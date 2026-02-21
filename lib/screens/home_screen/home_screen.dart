@@ -138,13 +138,14 @@ class _HomeScreenState extends State<HomeScreen> {
             if (item == 'add_workout') {
               try {
                 String workoutId = await workoutsService.addWorkout(authService.currentUser!.uid);
+                if (!mounted) return;
                 Navigator.push(
-                  context, 
+                  this.context, 
                   MaterialPageRoute(builder: (context) => WorkoutScreen(id: workoutId, date: DateFormat('dd.MM.yyyy').format(DateTime.now())))
                 );
               } on WorkoutAlreadyExistsException catch (e) {
                 Navigator.push(
-                  context, 
+                  this.context, 
                   MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id, date: DateFormat('dd.MM.yyyy').format(e.date)))
                 );
               }
@@ -162,8 +163,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     pickedDate
                   );
                 } on WorkoutAlreadyExistsException catch (e) {
+                  if (!mounted) return;
                   Navigator.push(
-                    context, 
+                    this.context, 
                     MaterialPageRoute(builder: (context) => WorkoutScreen(id: e.id, date: DateFormat('dd.MM.yyyy').format(e.date))),
                   );
                 }

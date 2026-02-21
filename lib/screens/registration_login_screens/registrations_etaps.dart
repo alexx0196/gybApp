@@ -151,6 +151,7 @@ class _RegistrationEmailPasswordState extends State<RegistrationEmailPassword> {
                     if (_formKey.currentState!.validate()) {
                       try {
                         await authService.createAccount(email: _emailController.text, password: _passwordController.text);
+                        if (!context.mounted) return;
                         Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (_) => RegistrationProfileDetails()), (route) => false);
                       } on FirebaseAuthException catch(e) {
                         if (e.code == 'email-already-in-use') {
@@ -222,9 +223,17 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
   }
 
   void finishRegistration() async {
-    if (_formKey.currentState!.validate()) {
-      if (await authFireStoreService.isUsernameTaken(authService.currentUser!.uid, _nameController.text)) {
-        ScaffoldMessenger.of(context)
+    if (!_formKey.currentState!.validate()) return;
+
+    final isTaken = await authFireStoreService.isUsernameTaken(
+      authService.currentUser!.uid,
+      _nameController.text,
+    );
+
+    if (!mounted) return;
+
+    if (isTaken) {
+      ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(
           const SnackBar(
@@ -232,23 +241,23 @@ class _RegistrationProfileDetailsState extends State<RegistrationProfileDetails>
             duration: Duration(seconds: 1),
           ),
         );
-        return;
-      } else {
-        authFireStoreService.createUserData(
-          authService.currentUser!.uid,
-          _nameController.text,
-          intl.DateFormat('yyyy-MM-dd').parse(_dateController.text),
-          _genderController.text,
-          double.parse(_weightController.text),
-          double.parse(_heightController.text),
-        );
-        Navigator.pushAndRemoveUntil(
-          context, 
-          MaterialPageRoute(builder: (context) => AuthLayout()), 
-          (route) => false
-        );
-      }
+      return;
     }
+
+    authFireStoreService.createUserData(
+      authService.currentUser!.uid,
+      _nameController.text,
+      intl.DateFormat('yyyy-MM-dd').parse(_dateController.text),
+      _genderController.text,
+      double.parse(_weightController.text),
+      double.parse(_heightController.text),
+    );
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => AuthLayout()),
+      (route) => false,
+    );
   }
 
   @override

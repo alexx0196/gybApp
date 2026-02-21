@@ -139,6 +139,8 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                 if (!_passwordFormKey.currentState!.validate()) return;
                 await authService.reAuthUser(enteredPassword: _enteredPassword.text);
                 await authService.changeEmail(email: email);
+
+                if (!context.mounted) return;
                 Navigator.of(context).pop();
               }, 
               child: const Text('Next'),
@@ -187,12 +189,15 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     currentEmail = _newEmailController.text;
                   });
 
+                  if (!context.mounted) return;
                   Navigator.of(context).pop();
                 } on FirebaseAuthException catch (e) {
                   if (e.code == 'requires-recent-login') {
+                    if (!context.mounted) return;
                     Navigator.of(context).pop();
                     await _checkPasswordForChangeEmail(email: _newEmailController.text);
                   } else {
+                    if (!context.mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(e.code),
@@ -279,6 +284,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                         (route) => false,
                       );
                     } else {
+                      if (!context.mounted) return;
                       ScaffoldMessenger.of(context)
                       ..removeCurrentSnackBar()
                       ..showSnackBar(

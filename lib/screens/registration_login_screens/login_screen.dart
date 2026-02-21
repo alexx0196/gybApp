@@ -29,6 +29,7 @@ class _LoginScreen extends State<LoginScreen> {
       await authService.signIn(email: email.text, password: password.text);
     } on FirebaseAuthException catch (e) {
       if (e.code == 'unknown-error') {
+        if (!mounted) return;
         ScaffoldMessenger.of(context)
         ..removeCurrentSnackBar()
         ..showSnackBar(
@@ -109,7 +110,7 @@ class _LoginScreen extends State<LoginScreen> {
                       await login();
 
                       if (authService.currentUser != null && mounted) {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+                        Navigator.push(this.context, MaterialPageRoute(builder: (context) => HomeScreen()));
                       }
                     }
                   },
