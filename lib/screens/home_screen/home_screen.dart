@@ -22,6 +22,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    // exercises migration
+    // CollectionService collectionService = CollectionService();
+    // collectionService.migrationForExercises(authService.currentUser!.uid);
+    // exercises migration
+
     isSelecting = ValueNotifier(false);
     selectedWorkouts = ValueNotifier([]);
   }

@@ -82,7 +82,9 @@ class AuthFireStoreService {
   }
 
   Future<void> createUserData(String uid, String username, DateTime dateOfBirth, String gender, double weight, double height) async {
-    await fireStore.collection('users').doc(uid).set({
+    final docRef = fireStore.collection('users').doc(uid);
+
+    await docRef.set({
       'isEmailVerificationCompleted': false,
       'createdAt': FieldValue.serverTimestamp(),
       'username': username,
@@ -90,8 +92,14 @@ class AuthFireStoreService {
       'gender': gender,
       'weight': weight,
       'height': height,
-      'exercises': ['Приседания', 'Жим лежа', 'Подтягивания'],
     });
+
+    List<String> exercises = ['Приседания', 'Жим лежа', 'Подтягивания'];
+    for (String name in exercises) {
+      await docRef.collection('exercises').doc(name).set({
+        'exerciseName': name
+      });
+    }
 
     addWeightEntry(uid, weight);
   }
@@ -157,21 +165,45 @@ class CollectionService {
   final fireStore = FirebaseFirestore.instance;
 
   Stream<List<String>> getAllExercises(String uid) {
-    final doc = fireStore.collection('users').doc(uid).snapshots().map((doc) {
+    final snapshots = fireStore.collection('users').doc(uid).collection('exercises').snapshots();
+    Stream<List<String>> exercises = snapshots.map((snapshot) => snapshot.docs.map((doc) => doc['exerciseName'] as String).toList());
+    return exercises;
+  }
+
+  Stream<List<String>> getAllActiveExercises(String uid) {
+    final snapshots = fireStore.collection('users').doc(uid).collection('exercises').where('isActive', isEqualTo: true).snapshots();
+    Stream<List<String>> exercises = snapshots.map((snapshot) => snapshot.docs.map((doc) => doc['exerciseName'] as String).toList());
+    return exercises;
+  }
+
+  Future<void> addCustomExercise(String uid, String name) async {
+    final docRef = fireStore.collection('users').doc(uid).collection('exercises'); 
+    await docRef.doc(name).set({
+      'exerciseName': name,
+      'isActive': true
+    }, SetOptions(merge: true));
+  }
+
+  Future<void> deleteExercise(String uid, String name) async {
+    final exerciseRef = fireStore.collection('users').doc(uid).collection('exercises').doc(name); // id упражнения это его названия
+    await exerciseRef.update({'isActive': false});
+  }
+
+  Future<void> migrationForExercises(String uid) async {
+    final docRef = fireStore.collection('users').doc(uid);
+
+    final exercises = await docRef.get().then((doc) {
         final data = doc.data();
         final List<dynamic> raw = data?['exercises'] ?? [];
         return raw.cast<String>();
     });
-    return doc;
-  }
 
-  Future<String> addCustomExercise(String uid, String name) async {
-    final docRef = fireStore.collection('users').doc(uid); 
-    await docRef.update({
-      'exercises': FieldValue.arrayUnion([name]),
-    });
-    // SetOptions(merge: true); // нужно чтобы обновить документ, не создавая новый
-    return docRef.id;
+    for (String exercise in exercises) {
+      docRef.collection('exercises').doc(exercise).set({
+        'exerciseName': exercise,
+        'isActive': true,
+      });
+    }
   }
 }
 
@@ -370,7 +402,7 @@ class ExerciseService {
     double maxWeight = 0.0;
     double totalVolume = 0.0;
     double avgWeight = 0.0;
-    int repsWorkSetCount = 0;
+    int totalReps = 0;
 
     sets.forEach((key, value) {
       if (value.weight > maxWeight) {
@@ -378,7 +410,7 @@ class ExerciseService {
       }
       if (value.isWarmUp == false) {
         avgWeight += value.weight;
-        repsWorkSetCount += value.reps;
+        totalReps += value.reps;
       }
       totalVolume += value.weight * value.reps;
     });
@@ -386,7 +418,7 @@ class ExerciseService {
       'date': date,
       'maxWeight': maxWeight,
       'totalVolume': totalVolume,
-      'avgWeight': repsWorkSetCount > 0 ? avgWeight / repsWorkSetCount : 0.0,
+      'avgWeight': double.parse((totalReps > 0 ? avgWeight / totalReps : 0.0).toStringAsFixed(2)),
     }, SetOptions(merge: true));
   }
 
@@ -418,10 +450,9 @@ class StatisticService {
   final fireStore = FirebaseFirestore.instance;
 
   Future<List<String>> getAllExercises(String uid) async {
-    final doc = await fireStore.collection('users').doc(uid).get();
-    final data = doc.data();
-    final List<dynamic> raw = data?['exercises'] ?? [];
-    return raw.cast<String>();
+    final snapshot = await fireStore.collection('users').doc(uid).collection('exercises').get();
+    List<String> exercises = snapshot.docs.map((exercise) => exercise['exerciseName'] as String).toList();
+    return exercises;
   }
 
   Future<List<DateTime>> getWorkoutDates(String uid) async {
@@ -489,14 +520,6 @@ class StatisticService {
   }
 
   Future<void> migrationForStats(String uid) async {
-    List<String> exercisesList = [];
-    await fireStore.collection('users').doc(uid).get().then((doc) {
-      final data = doc.data();
-      final List<dynamic> raw = data?['exercises'] ?? [];
-      exercisesList = raw.cast<String>();
-    });
-    print('exercisesList: $exercisesList');
-
     final snapshot = await fireStore.collection('users').doc(uid).collection('workouts').get();
 
     for (final workoutDoc in snapshot.docs) {
@@ -544,7 +567,7 @@ class StatisticService {
           'maxWeight': maxWeight,
           'totalVolume': totalVolume,
           'totalReps': totalReps,
-          'avgWeight': totalReps > 0 ? avgWeight / repsWorkSetCount : 0.0,
+          'avgWeight': double.parse((totalReps > 0 ? avgWeight / repsWorkSetCount : 0.0).toStringAsFixed(2)),
         });
         print('sss');
       }

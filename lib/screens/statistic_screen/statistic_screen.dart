@@ -166,10 +166,6 @@ class _StatsGraphState extends State<StatsGraph> {
     final maxWeights = widget.stats['maxWeights'];
     final volumes = widget.stats['volumes'];
     final avgWeights = widget.stats['avgWeights'];
-    // print(dates);
-    // print(maxWeights);
-    // print(volumes);
-    // print(widget.graphType);
 
     final List<CartesianSeries<dynamic, dynamic>> series = [];
 

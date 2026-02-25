@@ -27,7 +27,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
             width: MediaQuery.of(context).size.width * 0.4,
             height: MediaQuery.of(context).size.height * 0.4,
             child: StreamBuilder(
-              stream: collectionService.getAllExercises(authService.currentUser!.uid), 
+              stream: collectionService.getAllActiveExercises(authService.currentUser!.uid), 
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return CircularProgressIndicator();
